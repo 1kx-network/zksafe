@@ -1,0 +1,7 @@
+[package]
+name = "circuits"
+type = "bin"
+authors = ["Valeriy Zamaraiev"]
+compiler_version = "0.10.3"
+
+[dependencies]
