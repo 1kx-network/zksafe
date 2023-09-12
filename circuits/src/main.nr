@@ -30,8 +30,11 @@ fn cmp_gt<N>(a: [u8; N], b: [u8; N]) -> bool {
 fn verify_signers<T, N>(signers: [PubKey; T], signatures: [Signature; T], hash: Hash, owners: [Address; N]) {
     let mut curr_owner = [0; 20];
     for i in 0..T {
+        // Check only non-zero signatures.
         if (signers[i].x != [0; 32]) & (signers[i].y != [0; 32]) {
+            // First, check that it verifies
             assert(std::ecdsa_secp256k1::verify_signature(signers[i].x, signers[i].y, signatures[i], hash));
+            // Then, find the address to which the verifying key corresponds.
             let mut uncompressed_pubkey = [0; 64];
             for j in 0..32 {
                 uncompressed_pubkey[j] = signers[i].x[j];
@@ -42,7 +45,10 @@ fn verify_signers<T, N>(signers: [PubKey; T], signatures: [Signature; T], hash: 
             for j in 0..20 {
                 address[j] = pubkey_hash[j + 12];
             }
+            // Check that the addresses are sorted in the list.
+            // This is more to avoid repetitions.
             assert(cmp_gt(address, curr_owner));
+            // Check that the address is in the list of owners.
             let mut found = false;
             for j in 0..N {
                 if address == owners[j] {
