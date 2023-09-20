@@ -27,8 +27,9 @@ fn cmp_gt<N>(a: [u8; N], b: [u8; N]) -> bool {
 }
 
 /// Verify if the signatures are valid and the signers are in the owners list.
-fn verify_signers<T, N>(signers: [PubKey; T], signatures: [Signature; T], hash: Hash, owners: [Address; N]) {
+fn verify_signers<T, N>(threshold: u8, signers: [PubKey; T], signatures: [Signature; T], hash: Hash, owners: [Address; N]) {
     let mut curr_owner = [0; 20];
+    let mut num_verified_signatures = 0;
     for i in 0..T {
         // Check only non-zero signatures.
         if (signers[i].x != [0; 32]) & (signers[i].y != [0; 32]) {
@@ -46,7 +47,7 @@ fn verify_signers<T, N>(signers: [PubKey; T], signatures: [Signature; T], hash: 
                 address[j] = pubkey_hash[j + 12];
             }
             // Check that the addresses are sorted in the list.
-            // This is more to avoid repetitions.
+            // We need this to avoid the same signature being used mulitple times.
             assert(cmp_gt(address, curr_owner));
             // Check that the address is in the list of owners.
             let mut found = false;
@@ -57,10 +58,12 @@ fn verify_signers<T, N>(signers: [PubKey; T], signatures: [Signature; T], hash: 
            }
            assert(found);
            curr_owner = address;
+           num_verified_signatures += 1;
         }
     }
+    assert(num_verified_signatures >= threshold);
 }
 
-fn main(signers: [PubKey; 3], signatures: [Signature; 3], hash: pub Hash, owners: pub [Address; 6]) {
-    verify_signers(signers, signatures, hash, owners);
+fn main(threshold: pub u8, signers: [PubKey; 10], signatures: [Signature; 10], hash: pub Hash, owners: pub [Address; 10]) {
+    verify_signers(threshold, signers, signatures, hash, owners);
 }

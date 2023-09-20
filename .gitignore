@@ -1,6 +1,7 @@
 # Compiler files
 cache/
 out/
+artifacts/
 
 # Ignores development broadcast logs
 !/broadcast
@@ -12,3 +13,7 @@ docs/
 
 # Dotenv file
 .env
+node_modules
+
+typechain-types
+yarn-error.log
