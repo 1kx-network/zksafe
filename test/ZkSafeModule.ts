@@ -25,8 +25,6 @@ describe("ZkSafeModule", function () {
     });
 
     it("Should fail to verify a nonexistent contract", async function () {
-        const ZkSafeModule = await ethers.getContractFactory("ZkSafeModule");
-        const zkSafeModule = await ZkSafeModule.deploy(safe.getAddress());
 
         const transaction  = {
             to: "0x0000000000000000000000000000000000000000",
@@ -43,8 +41,6 @@ describe("ZkSafeModule", function () {
     });
 
     it("Should fail a bastic transaction with a wrong proof", async function () {
-        const ZkSafeModule = await ethers.getContractFactory("ZkSafeModule");
-        const zkSafeModule = await ZkSafeModule.deploy(safe.getAddress());
 
         const transaction  = {
             to: "0x0000000000000000000000000000000000000000",
