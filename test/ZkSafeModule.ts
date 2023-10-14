@@ -1,5 +1,7 @@
 import { getSafeWithOwners } from "./setup";
-import hre, { ethers } from "hardhat";
+import { Signer } from '@ethersproject/abstract-signer';
+import { Wallet } from '@ethersproject/wallet';
+import hre, { ethers, waffle } from 'hardhat';
 import { expect } from "chai";
 import { Safe as SafeContract, ZkSafeModule } from "../typechain-types";
 
@@ -14,6 +16,22 @@ import { SafeTransaction } from "@safe-global/safe-contracts";
 import Safe, { SafeAccountConfig, SafeFactory } from "@safe-global/protocol-kit";
 import { EthersAdapter } from '@safe-global/protocol-kit';
 // import { getAccounts } from "@safe-global/protocol-kit/tests/utils/setupTestNetwork";
+
+interface Account {
+  signer: Signer
+  address: string
+}
+
+function getAccounts(): Account[] {
+  const wallets = waffle.provider.getWallets()
+  const accounts: Account[] = []
+  for (let i = 0; i < 10; i++) {
+    const wallet: Wallet = wallets[i]
+    const account: Account = { signer: wallet as Signer, address: wallet.address }
+    accounts.push(account)
+  }
+  return accounts
+}
 
 // A lot of Noir magic taken from https://noir-lang.org/typescript/
 async function initCircuits() {
