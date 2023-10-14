@@ -1,9 +1,5 @@
 import { HardhatUserConfig } from "hardhat/types";
-import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-deploy";
-
-// This adds support for typescript paths mappings
-import "tsconfig-paths/register";
 
 const config: HardhatUserConfig = {
     solidity: {

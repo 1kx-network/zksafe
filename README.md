@@ -1,13 +1,14 @@
-# Sample Hardhat Project
+# zkSafe is Safe with zk hiding of owners and signers.
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+zkSafe works by using the separate Safe module, which verifies zk proofs and submit transactions. To start using zkSafe, install the following address as a module.
 
-Try running some of the following tasks:
+TODO add addresses for various networks.
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
-```
+
+## Hiding signers
+
+This is the first stage of hiding. To hide singers, we collect signatures then produce a zk proof of having verified the signatures and that the owners have been in the list of owners.
+
+## Hiding all owners
+
+Hiding the owner list itself is achieved via storing a commitment to the set of owners in the smart contract, and verifying the proof of ownership in the transaction verification.
