@@ -6,12 +6,17 @@
   "author": "Valeriy Zamaraiev <v@1kx.capital>",
   "license": "MIT",
   "devDependencies": {
-    "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@typechain/hardhat": "8.0.3",
+    "@types/mocha": ">=9.1.0",
     "chai": "^4.3.10",
     "hardhat": "^2.18.1",
     "hardhat-deploy": "^0.11.42",
     "hardhat-ethers": "^1.0.1",
+    "hardhat-gas-reporter": "^1.0.8",
+    "solidity-coverage": "^0.8.1",
     "ts-node": "^10.9.1",
+    "typechain": "^8.2.0",
     "typescript": "^5.2.2"
   },
   "dependencies": {
@@ -23,7 +28,7 @@
     "@safe-global/safe-core-sdk-types": "^2.3.0",
     "add": "^2.0.6",
     "dotenv": "^16.3.1",
-    "ethers": "5.7.0",
+    "ethers": "^5.7.0",
     "fflate": "^0.8.1",
     "yarn": "^1.22.19"
   }

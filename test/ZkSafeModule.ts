@@ -1,5 +1,5 @@
 // import { getSafeWithOwners } from "./setup";
-import hre, { ethers } from 'hardhat';
+import hre, { ethers, network } from 'hardhat';
 import { expect } from "chai";
 import { Safe, ZkSafeModule } from "../typechain-types";
 
@@ -14,15 +14,19 @@ import { SafeTransaction } from "@safe-global/safe-contracts";
 // import Safe, { SafeAccountConfig, SafeFactory } from "@safe-global/protocol-kit";
 import { EthersAdapter, SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit';
 // import { getAccounts } from "@safe-global/protocol-kit/tests/utils/setupTestNetwork";
-import dotenv from '.dotenv';
+import dotenv from 'dotenv';
 
+dotenv.config();
 
 function getOwnerAdapters(): EthersAdapter[] {
     let owners = new Array();
-    console.log("ethers: ", ethers);
-    const owner1Signer = new ethers.Wallet(process.env.OWNER_1_PRIVATE_KEY!, ethers.provider);
-    const owner2Signer = new ethers.Wallet(process.env.OWNER_2_PRIVATE_KEY!, ethers.provider);
-    const owner3Signer = new ethers.Wallet(process.env.OWNER_3_PRIVATE_KEY!, ethers.provider);
+    console.log("OWNER_1_PRIVATE_KEY", process.env.OWNER_1_PRIVATE_KEY!);
+    console.log("WTF: ", hre.ethers.Wallet);
+    console.log("ethers.Provider", ethers.Provider);
+    let provider: ethers.Provider = ethers.provider;
+    const owner1Signer = new hre.ethers.Wallet(process.env.OWNER_1_PRIVATE_KEY!, hre.ethers.provider);
+    const owner2Signer = new hre.ethers.Wallet(process.env.OWNER_2_PRIVATE_KEY!, hre.ethers.provider);
+    const owner3Signer = new hre.ethers.Wallet(process.env.OWNER_3_PRIVATE_KEY!, hre.ethers.provider);
     owners.push(new EthersAdapter({ ethers, signerOrProvider: owner1Signer }));
     owners.push(new EthersAdapter({ ethers, signerOrProvider: owner2Signer }));
     owners.push(new EthersAdapter({ ethers, signerOrProvider: owner3Signer }));
