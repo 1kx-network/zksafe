@@ -1,9 +1,7 @@
-import { getSafeWithOwners } from "./setup";
-import { Signer } from '@ethersproject/abstract-signer';
-import { Wallet } from '@ethersproject/wallet';
-import hre, { ethers, waffle } from 'hardhat';
+// import { getSafeWithOwners } from "./setup";
+import hre, { ethers } from 'hardhat';
 import { expect } from "chai";
-import { Safe as SafeContract, ZkSafeModule } from "../typechain-types";
+import { Safe, ZkSafeModule } from "../typechain-types";
 
 // See https://noir-lang.org/typescript/ as an example.
 // Most of the code is just copy-pasted as recommended there.
@@ -13,24 +11,22 @@ import { Crs, newBarretenbergApiAsync, RawBuffer } from '@aztec/bb.js';
 import { executeCircuit, compressWitness } from '@noir-lang/acvm_js';
 import { AddressLike, BigNumberish, BytesLike } from "ethers";
 import { SafeTransaction } from "@safe-global/safe-contracts";
-import Safe, { SafeAccountConfig, SafeFactory } from "@safe-global/protocol-kit";
-import { EthersAdapter } from '@safe-global/protocol-kit';
+// import Safe, { SafeAccountConfig, SafeFactory } from "@safe-global/protocol-kit";
+import { EthersAdapter, SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit';
 // import { getAccounts } from "@safe-global/protocol-kit/tests/utils/setupTestNetwork";
+import dotenv from '.dotenv';
 
-interface Account {
-  signer: Signer
-  address: string
-}
 
-function getAccounts(): Account[] {
-  const wallets = waffle.provider.getWallets()
-  const accounts: Account[] = []
-  for (let i = 0; i < 10; i++) {
-    const wallet: Wallet = wallets[i]
-    const account: Account = { signer: wallet as Signer, address: wallet.address }
-    accounts.push(account)
-  }
-  return accounts
+function getOwnerAdapters(): EthersAdapter[] {
+    let owners = new Array();
+    console.log("ethers: ", ethers);
+    const owner1Signer = new ethers.Wallet(process.env.OWNER_1_PRIVATE_KEY!, ethers.provider);
+    const owner2Signer = new ethers.Wallet(process.env.OWNER_2_PRIVATE_KEY!, ethers.provider);
+    const owner3Signer = new ethers.Wallet(process.env.OWNER_3_PRIVATE_KEY!, ethers.provider);
+    owners.push(new EthersAdapter({ ethers, signerOrProvider: owner1Signer }));
+    owners.push(new EthersAdapter({ ethers, signerOrProvider: owner2Signer }));
+    owners.push(new EthersAdapter({ ethers, signerOrProvider: owner3Signer }));
+    return owners;
 }
 
 // A lot of Noir magic taken from https://noir-lang.org/typescript/
@@ -73,26 +69,31 @@ async function generateWitness(safe: Safe, txn: SafeTransaction, signatures: Byt
 }
 
 describe("ZkSafeModule", function () {
-    let signers;
+    let ownerAdapters: EthersAdapter[];
     let safeContract: SafeContract;
     let zkSafeModule: ZkSafeModule;
     let safe: Safe;
 
     before(async function () {
-        signers = (await getAccounts()).slice(0, 10);
+        ownerAdapters = getOwnerAdapters();
         // Deploy Safe
-        let owners = signers.map((signer) => signer.address);
+        let owners = await Promise.all(ownerAdapters.map((oa) => oa.getSigner()?.getAddress()?.then((a) => ethers.constants.AddressZero)));
         console.log("owners", owners);
-        safeContract = await getSafeWithOwners(owners, 3);
-        const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: signers[0] as Signer });
-        safe = await Safe.create({ethAdapter, safeAddress: await safeContract.getAddress()});
+
+        const safeFactory = await SafeFactory.create({ ethAdapter: ownerAdapters[0] });
+        const safeAccountConfig: SafeAccountConfig =  {
+            owners,
+            threshold: 2
+        };
+        safe = await safeFactory.deploySafe({ safeAccountConfig })
+        const safeAddress = await safe.getAddress();
+        console.log("safeAddress", safeAddress);
 
         const verifierContractFactory = await ethers.getContractFactory("UltraVerifier");
         const verifierContract = await verifierContractFactory.deploy();
 
         const ZkSafeModule = await ethers.getContractFactory("ZkSafeModule");
         zkSafeModule = await ZkSafeModule.deploy(verifierContract.getAddress());
-
     });
 
     it("Should fail to verify a nonexistent contract", async function () {
