@@ -7,7 +7,7 @@ import { Safe, ZkSafeModule } from "../typechain-types";
 // Most of the code is just copy-pasted as recommended there.
 import circuit from '../circuits/target/circuits.json';
 import { decompressSync } from 'fflate';
-import { Crs, newBarretenbergApiAsync, RawBuffer } from '@aztec/bb.js';
+import { Crs, Barretenberg, RawBuffer } from '@aztec/bb.js';
 import { executeCircuit, compressWitness } from '@noir-lang/acvm_js';
 import { AddressLike, BigNumberish, BytesLike } from "ethers";
 import { SafeTransaction } from "@safe-global/safe-contracts";
@@ -38,20 +38,24 @@ function getOwnerAdapters(): EthersAdapter[] {
 async function initCircuits() {
     const acirBuffer = Buffer.from(circuit.bytecode, 'base64');
     const acirBufferUncompressed = decompressSync(acirBuffer);
+    console.log("Uncompressed buffer length: ", acirBufferUncompressed.length);
 
-    const api = await newBarretenbergApiAsync(4);
+    console.log("initializing Barretenberg api");
+    const api = await Barretenberg.new(4);
 
+    console.log("Barretenberg api initialized");
     const [exact, circuitSize, subgroup] = await api.acirGetCircuitSizes(acirBufferUncompressed);
+    console.log("Found group circuit size", circuitSize, "subgroup", subgroup, "exact", exact);
+
     const subgroupSize = Math.pow(2, Math.ceil(Math.log2(circuitSize)));
     const crs = await Crs.new(subgroupSize + 1);
     await api.commonInitSlabAllocator(subgroupSize);
     await api.srsInitSrs(new RawBuffer(crs.getG1Data()), crs.numPoints, new RawBuffer(crs.getG2Data()));
-    
+
     const acirComposer = await api.acirNewAcirComposer(subgroupSize);
 
     // Note that in the browser you need to init the ACVM, as described in https://noir-lang.org/typescript/
-    
-    return [api, acirComposer];
+    return [api, acirComposer, acirBuffer];
 }
 
 // Here we need to supply both signers and signatures.
@@ -79,6 +83,10 @@ describe("ZkSafeModule", function () {
     let zkSafeModule: ZkSafeModule;
     let safe: Safe;
 
+    let api: any;
+    let acirComposer: any;
+    let acirBuffer: Buffer;
+
     before(async function () {
         ownerAdapters = getOwnerAdapters();
         // Deploy Safe
@@ -103,6 +111,8 @@ describe("ZkSafeModule", function () {
         const ZkSafeModule = await ethers.getContractFactory("ZkSafeModule");
         zkSafeModule = await ZkSafeModule.deploy(verifierContract.address);
         console.log("zlSafeModule", zkSafeModule.address);
+
+        [api, acirComposer, acirBuffer] = await initCircuits();
     });
 
     it("Should fail to verify a nonexistent contract", async function () {
@@ -129,6 +139,24 @@ describe("ZkSafeModule", function () {
             data: "0x",
             operation: 0,
         }
+
+        expect(zkSafeModule.sendZkSafeTransaction(
+            safe.address,
+            transaction,
+            "0x", // proof
+        )).to.be.revertedWith("Invalid proof");
+    });
+
+    it("Should succeed verification of a basic transaction", async function () {
+
+        const transaction  = {
+            to: "0x0000000000000000000000000000000000000000",
+            value: 0,
+            data: "0x",
+            operation: 0,
+        }
+
+
 
         // To generate proof, we need:
         //   1) instance of the prover
