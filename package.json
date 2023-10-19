@@ -6,6 +6,7 @@
   "author": "Valeriy Zamaraiev <v@1kx.capital>",
   "license": "MIT",
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@typechain/hardhat": "8.0.3",
     "@types/mocha": ">=9.1.0",

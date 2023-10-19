@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from "hardhat/types";
 import "hardhat-deploy";
 import "@nomiclabs/hardhat-ethers";
+import "@nomicfoundation/hardhat-chai-matchers";
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -17,6 +18,11 @@ const config: HardhatUserConfig = {
             default: 1,
         },
     },
+    networks: {
+        localhost: {
+            url: "http://127.0.0.1:11111"
+        },
+    }
 };
 
 export default config;

@@ -15,6 +15,7 @@ import { SafeTransaction } from "@safe-global/safe-contracts";
 import { EthersAdapter, SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit';
 // import { getAccounts } from "@safe-global/protocol-kit/tests/utils/setupTestNetwork";
 import dotenv from 'dotenv';
+import { getSafeWithOwners } from './setup';
 
 dotenv.config();
 
@@ -81,23 +82,27 @@ describe("ZkSafeModule", function () {
     before(async function () {
         ownerAdapters = getOwnerAdapters();
         // Deploy Safe
-        let owners = await Promise.all(ownerAdapters.map((oa) => oa.getSigner()?.getAddress()?.then((a) => ethers.constants.AddressZero)));
+        let owners = await Promise.all(ownerAdapters.map((oa) => oa.getSigner()?.getAddress()));
         console.log("owners", owners);
 
-        const safeFactory = await SafeFactory.create({ ethAdapter: ownerAdapters[0] });
-        const safeAccountConfig: SafeAccountConfig =  {
-            owners,
-            threshold: 2
-        };
-        safe = await safeFactory.deploySafe({ safeAccountConfig })
-        const safeAddress = await safe.getAddress();
+        safe = await getSafeWithOwners(owners, 2);
+
+        // const safeFactory = await SafeFactory.create({ ethAdapter: ownerAdapters[0] });
+        // const safeAccountConfig: SafeAccountConfig =  {
+        //     owners,
+        //     threshold: 2
+        // };
+        // safe = await safeFactory.deploySafe({ safeAccountConfig })
+        const safeAddress = await safe.address;
         console.log("safeAddress", safeAddress);
 
         const verifierContractFactory = await ethers.getContractFactory("UltraVerifier");
         const verifierContract = await verifierContractFactory.deploy();
+        console.log("verifierContract", verifierContract.address);
 
         const ZkSafeModule = await ethers.getContractFactory("ZkSafeModule");
-        zkSafeModule = await ZkSafeModule.deploy(verifierContract.getAddress());
+        zkSafeModule = await ZkSafeModule.deploy(verifierContract.address);
+        console.log("zlSafeModule", zkSafeModule.address);
     });
 
     it("Should fail to verify a nonexistent contract", async function () {
@@ -132,7 +137,7 @@ describe("ZkSafeModule", function () {
         //   4) call the prover
 
         expect(zkSafeModule.sendZkSafeTransaction(
-            safe.getAddress(),
+            safe.address,
             transaction,
             "0x", // proof
         )).to.be.revertedWith("Invalid proof");
