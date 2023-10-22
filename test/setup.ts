@@ -130,7 +130,7 @@ export const getSafeTemplate = async (saltNumber: string = getRandomIntAsString(
     const singleton = await getSafeSingleton();
     const singletonAddress = await singleton.address;
     const factory = await getFactory();
-    const template = await factory.callStatic.createProxyWithNonce(singletonAddress, "0x", saltNumber);
+    const template = await factory.callStatic.createProxyWithNonce.callStatic(singletonAddress, "0x", saltNumber);
     await factory.createProxyWithNonce(singletonAddress, "0x", saltNumber).then((tx: any) => tx.wait());
     const Safe = await getSafeSingletonContractFromEnvVariable();
     return Safe.attach(template) as Safe | SafeL2;

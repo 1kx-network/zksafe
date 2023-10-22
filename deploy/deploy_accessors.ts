@@ -8,7 +8,7 @@ const deploy: DeployFunction = async function (
   const { deployer } = await getNamedAccounts();
   const { deploy } = deployments;
 
-  await deploy("GnosisSafeProxyFactory", {
+  await deploy("SimulateTxAccessor", {
     from: deployer,
     args: [],
     log: true,
@@ -16,5 +16,5 @@ const deploy: DeployFunction = async function (
   });
 };
 
-deploy.tags = ['factory', 'l2-suite', 'main-suite']
+deploy.tags = ['accessors', 'l2-suite', 'main-suite']
 export default deploy;

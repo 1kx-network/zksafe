@@ -6,9 +6,8 @@
 pragma solidity ^0.8.12;
 
 import {UltraVerifier} from "../circuits/contract/circuits/plonk_vk.sol";
-import "@safe-global/safe-contracts/contracts/common/Enum.sol";
-import "@safe-global/safe-contracts/contracts/Safe.sol";
-
+import "@gnosis.pm/safe-contracts/contracts/common/Enum.sol";
+import "@gnosis.pm/safe-contracts/contracts/GnosisSafe.sol";
 
 contract ZkSafeModule {
 
@@ -25,7 +24,7 @@ contract ZkSafeModule {
         Enum.Operation operation;
     }
 
-    function verifyZkSafeTransaction(Safe safeContract, bytes32 txHash, bytes calldata proof) public view returns (bool) {
+    function verifyZkSafeTransaction(GnosisSafe safeContract, bytes32 txHash, bytes calldata proof) public view returns (bool) {
         // Construct the input to the circuit.
         bytes32[] memory publicInputs = new bytes32[](33);
 
@@ -63,7 +62,7 @@ contract ZkSafeModule {
     }
 
     function sendZkSafeTransaction(
-        Safe safeContract,
+        GnosisSafe safeContract,
         // The Safe address to which the transaction will be sent.
         Transaction calldata transaction,
         // The proof blob.

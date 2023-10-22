@@ -6,7 +6,7 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await getNamedAccounts();
     const { deploy } = deployments;
 
-    await deploy("TokenCallbackHandler", {
+    await deploy("DefaultCallbackHandler", {
         from: deployer,
         args: [],
         log: true,
