@@ -27,7 +27,7 @@
     "@gnosis.pm/safe-singleton-factory": "^1.0.14",
     "@noir-lang/acvm_js": "https://git@github.com/noir-lang/acvm-simulator-wasm.git#b9d9ca9dfc5140839f23998d9466307215607c42",
     "@noir-lang/backend_barretenberg": "^0.18.0",
-    "@noir-lang/noir_js": "^0.16.0",
+    "@noir-lang/noir_js": "^0.18.0",
     "@safe-global/protocol-kit": "^1.3.0",
     "@safe-global/safe-core-sdk-types": "^2.3.0",
     "add": "^2.0.6",

@@ -69,8 +69,43 @@ async function getOwnerAdapters(): Promise<EthersAdapter[]> {
 //     return witnessBuff;
 // }
 
-function padArray(arr: any[], length: number) {
-    return arr.concat(Array(length - arr.length).fill(0));
+/// Extract x and y coordinates from a serialized ECDSA public key.
+function extractCoordinates(serializedPubKey: string): { x: string[], y: string[] } {
+    // Ensure the key starts with '0x04' which is typical for an uncompressed key.
+    if (!serializedPubKey.startsWith('0x04')) {
+        throw new Error('The public key does not appear to be in uncompressed format.');
+    }
+
+    // The next 64 characters after the '0x04' are the x-coordinate.
+    let xHex = serializedPubKey.slice(4, 68);
+
+    // The following 64 characters are the y-coordinate.
+    let yHex = serializedPubKey.slice(66, 132);
+
+    // Convert the hex string to a byte array.
+    let xBytes = Array.from(Buffer.from(xHex, 'hex')).map((b) => b.toString());
+    let yBytes = Array.from(Buffer.from(yHex, 'hex')).map((b) => b.toString());
+
+    console.log("xBytes", xBytes);
+    return { x: xBytes, y: yBytes };
+}
+
+function extractRSFromSignature(signatureHex: string): string[] {
+    if (signatureHex.length !== 132 || !signatureHex.startsWith('0x')) {
+        throw new Error('Signature should be a 130-character hex string starting with 0x.');
+    }
+    return Array.from(Buffer.from(signatureHex.slice(2, 130), 'hex')).map((b) => b.toString());
+}
+
+function addressToArray(address: string): string[] {
+    if (address.length !== 42 || !address.startsWith('0x')) {
+        throw new Error('Address should be a 40-character hex string starting with 0x.');
+    }
+    return Array.from(ethers.utils.arrayify(address)).map((b) => b.toString());
+}
+
+function padArray(arr: any[], length: number, fill: any = 0) {
+    return arr.concat(Array(length - arr.length).fill(fill));
 }
 
 describe("ZkSafeModule", function () {
@@ -160,7 +195,8 @@ describe("ZkSafeModule", function () {
 
         // New Noir Way
         const backend = new BarretenbergBackend(circuit);
-        noir = new Noir(backend);
+        noir = new Noir(circuit, backend);
+        await noir.init();
         console.log("noir backend initialzied");
     });
 
@@ -216,18 +252,29 @@ describe("ZkSafeModule", function () {
         //   4) call the prover
         //   5) convert the outputs into the format compatible with the verifier.
 
+        // type Address = [u8; 20];
+        // type Signature = [u8; 64];
+        // type Hash = [u8; 32];
+        // struct  PubKey {
+        //    x: [u8; 32],
+        //    y: [u8; 32],
+        // }
         // fn main(threshold: pub u8, signers: [PubKey; 10], signatures: [Signature; 10], hash: pub Hash, owners: pub [Address; 10])
 
         console.log("WTF ");
 
+        const zero_pubkey = { x: new Array(32).fill("0"), y: new Array(32).fill("0") };
+        const zero_signature = new Array(64).fill("0");
+        const zero_address = new Array(20).fill("0");
+
         const input = {
             threshold: await safe.getThreshold(),
-            signers: padArray([sig1, sig2, sig3].map((sig) => ethers.utils.recoverPublicKey(txHash, sig)), 10),
-            signatures: padArray([sig1, sig2, sig3], 10),
-            hash: txHash,
-            owners: padArray(await safe.getOwners(), 10),
+            signers: padArray([sig1, sig2, sig3].map((sig) => extractCoordinates(ethers.utils.recoverPublicKey(txHash, sig))), 10, zero_pubkey),
+            signatures: padArray([sig1, sig2, sig3].map(extractRSFromSignature), 10, zero_signature),
+            hash: Array.from(ethers.utils.arrayify(txHash)).map((b) => b.toString()),
+            owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
         };
-        console.log("input", input);
+        console.log("input", JSON.stringify(input));
         correctProof = await noir.generateFinalProof(input);
         // console.log("correctProof", correctProof);
 
