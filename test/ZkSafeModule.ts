@@ -85,8 +85,6 @@ function extractCoordinates(serializedPubKey: string): { x: string[], y: string[
     // Convert the hex string to a byte array.
     let xBytes = Array.from(Buffer.from(xHex, 'hex')).map((b) => b.toString());
     let yBytes = Array.from(Buffer.from(yHex, 'hex')).map((b) => b.toString());
-
-    console.log("xBytes", xBytes);
     return { x: xBytes, y: yBytes };
 }
 
