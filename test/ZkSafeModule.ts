@@ -265,15 +265,19 @@ describe("ZkSafeModule", function () {
         const zero_signature = new Array(64).fill("0");
         const zero_address = new Array(20).fill("0");
 
+        const signatures = [sig1, sig2, sig3];
+        signatures.sort((sig1, sig2) => ethers.utils.recoverAddress(txHash, sig1).localeCompare(ethers.utils.recoverAddress(txHash, sig2)));
+
         const input = {
             threshold: await safe.getThreshold(),
-            signers: padArray([sig1, sig2, sig3].map((sig) => extractCoordinates(ethers.utils.recoverPublicKey(txHash, sig))), 10, zero_pubkey),
-            signatures: padArray([sig1, sig2, sig3].map(extractRSFromSignature), 10, zero_signature),
+            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.utils.recoverPublicKey(txHash, sig))), 10, zero_pubkey),
+            signatures: padArray(signatures.map(extractRSFromSignature), 10, zero_signature),
             hash: Array.from(ethers.utils.arrayify(txHash)),
             owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
         };
         console.log("input", JSON.stringify(input));
         correctProof = await noir.generateFinalProof(input);
+        console.log("correctProof", correctProof);
         // console.log("correctProof", correctProof);
 
         // expect(zkSafeModule.sendZkSafeTransaction(
