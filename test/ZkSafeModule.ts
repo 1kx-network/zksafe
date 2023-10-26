@@ -70,7 +70,7 @@ async function getOwnerAdapters(): Promise<EthersAdapter[]> {
 // }
 
 /// Extract x and y coordinates from a serialized ECDSA public key.
-function extractCoordinates(serializedPubKey: string): { x: string[], y: string[] } {
+function extractCoordinates(serializedPubKey: string): { x: number[], y: number[] } {
     // Ensure the key starts with '0x04' which is typical for an uncompressed key.
     if (!serializedPubKey.startsWith('0x04')) {
         throw new Error('The public key does not appear to be in uncompressed format.');
@@ -83,23 +83,23 @@ function extractCoordinates(serializedPubKey: string): { x: string[], y: string[
     let yHex = serializedPubKey.slice(68, 132);
 
     // Convert the hex string to a byte array.
-    let xBytes = Array.from(Buffer.from(xHex, 'hex')).map((b) => b.toString());
-    let yBytes = Array.from(Buffer.from(yHex, 'hex')).map((b) => b.toString());
+    let xBytes = Array.from(Buffer.from(xHex, 'hex'));
+    let yBytes = Array.from(Buffer.from(yHex, 'hex'));
     return { x: xBytes, y: yBytes };
 }
 
-function extractRSFromSignature(signatureHex: string): string[] {
+function extractRSFromSignature(signatureHex: string): number[] {
     if (signatureHex.length !== 132 || !signatureHex.startsWith('0x')) {
         throw new Error('Signature should be a 130-character hex string starting with 0x.');
     }
-    return Array.from(Buffer.from(signatureHex.slice(2, 130), 'hex')).map((b) => b.toString());
+    return Array.from(Buffer.from(signatureHex.slice(2, 130), 'hex'));
 }
 
-function addressToArray(address: string): string[] {
+function addressToArray(address: string): number[] {
     if (address.length !== 42 || !address.startsWith('0x')) {
         throw new Error('Address should be a 40-character hex string starting with 0x.');
     }
-    return Array.from(ethers.utils.arrayify(address)).map((b) => b.toString());
+    return Array.from(ethers.utils.arrayify(address));
 }
 
 function padArray(arr: any[], length: number, fill: any = 0) {
@@ -269,7 +269,7 @@ describe("ZkSafeModule", function () {
             threshold: await safe.getThreshold(),
             signers: padArray([sig1, sig2, sig3].map((sig) => extractCoordinates(ethers.utils.recoverPublicKey(txHash, sig))), 10, zero_pubkey),
             signatures: padArray([sig1, sig2, sig3].map(extractRSFromSignature), 10, zero_signature),
-            hash: Array.from(ethers.utils.arrayify(txHash)).map((b) => b.toString()),
+            hash: Array.from(ethers.utils.arrayify(txHash)),
             owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
         };
         console.log("input", JSON.stringify(input));
