@@ -80,7 +80,7 @@ function extractCoordinates(serializedPubKey: string): { x: string[], y: string[
     let xHex = serializedPubKey.slice(4, 68);
 
     // The following 64 characters are the y-coordinate.
-    let yHex = serializedPubKey.slice(66, 132);
+    let yHex = serializedPubKey.slice(68, 132);
 
     // Convert the hex string to a byte array.
     let xBytes = Array.from(Buffer.from(xHex, 'hex')).map((b) => b.toString());
