@@ -228,7 +228,7 @@ describe("ZkSafeModule", function () {
             owners: padArray(await safe.getOwners(), 10),
         };
         console.log("input", input);
-        // correctProof = await noir.generateFinalProof(input);
+        correctProof = await noir.generateFinalProof(input);
         // console.log("correctProof", correctProof);
 
         // expect(zkSafeModule.sendZkSafeTransaction(
