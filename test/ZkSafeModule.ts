@@ -25,50 +25,6 @@ async function getOwnerAdapters(): Promise<EthersAdapter[]> {
     return (await ethers.getSigners()).slice(0, 3).map((signer) => new EthersAdapter({ ethers, signerOrProvider: signer }));
 }
 
-// A lot of Noir magic taken from https://noir-lang.org/typescript/
-// async function initCircuits() {
-//     const acirBuffer = Buffer.from(circuit.bytecode, 'base64');
-//     const acirBufferUncompressed = decompressSync(acirBuffer);
-//     console.log("Uncompressed buffer length: ", acirBufferUncompressed.length);
-
-//     console.log("initializing Barretenberg api");
-//     const api = await Barretenberg.new(4);
-
-//     console.log("Barretenberg api initialized");
-//     const [exact, circuitSize, subgroup] = await api.acirGetCircuitSizes(acirBufferUncompressed);
-//     console.log("Found group circuit size", circuitSize, "subgroup", subgroup, "exact", exact);
-
-//     const subgroupSize = Math.pow(2, Math.ceil(Math.log2(circuitSize)));
-//     const crs = await Crs.new(subgroupSize + 1);
-//     await api.commonInitSlabAllocator(subgroupSize);
-//     await api.srsInitSrs(new RawBuffer(crs.getG1Data()), crs.numPoints, new RawBuffer(crs.getG2Data()));
-
-//     const acirComposer = await api.acirNewAcirComposer(subgroupSize);
-
-//     // Note that in the browser you need to init the ACVM, as described in https://noir-lang.org/typescript/
-//     return [api, acirComposer, acirBuffer, acirBufferUncompressed];
-// }
-
-// Here we need to supply both signers and signatures.
-// async function generateWitness(safe: Safe, txn: SafeTransaction, signatures: BytesLike[], acirBuffer: Buffer): Promise<Uint8Array> {
-//     // Calcualte transaction hash using Safe Sdk
-//     const txHash = await safe.getTransactionHash(txn);
-    
-//     // From the signatures, determine the signer pubkeys using ecrecover.
-//     const signerPubKeys = signatures.map((sig) => ethers.utils.recoverPublicKey(txHash, sig));
-
-//     // Generate witness suitable for feeding into the ACVM.
-//     // This means: 
-//     const initialWitness = new Map<number, string>();
-//     initialWitness
-//     const witnessMap = await executeCircuit(acirBuffer, initialWitness, () => {
-//         throw Error('unexpected oracle');
-//     });
-
-//     const witnessBuff = compressWitness(witnessMap);
-//     return witnessBuff;
-// }
-
 /// Extract x and y coordinates from a serialized ECDSA public key.
 function extractCoordinates(serializedPubKey: string): { x: number[], y: number[] } {
     // Ensure the key starts with '0x04' which is typical for an uncompressed key.
@@ -266,19 +222,20 @@ describe("ZkSafeModule", function () {
         const zero_address = new Array(20).fill("0");
 
         const signatures = [sig1, sig2, sig3];
+        
+        // Sort signatures by address - this is how the Safe contract does it.
         signatures.sort((sig1, sig2) => ethers.utils.recoverAddress(txHash, sig1).localeCompare(ethers.utils.recoverAddress(txHash, sig2)));
 
         const input = {
             threshold: await safe.getThreshold(),
-            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.utils.recoverPublicKey(txHash, sig))), 10, zero_pubkey),
-            signatures: padArray(signatures.map(extractRSFromSignature), 10, zero_signature),
+            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.utils.recoverPublicKey(txHash, sig))), 4, zero_pubkey),
+            signatures: padArray(signatures.map(extractRSFromSignature), 4, zero_signature),
             hash: Array.from(ethers.utils.arrayify(txHash)),
-            owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
+            owners: padArray((await safe.getOwners()).map(addressToArray), 4, zero_address),
         };
         console.log("input", JSON.stringify(input));
         correctProof = await noir.generateFinalProof(input);
         console.log("correctProof", correctProof);
-        // console.log("correctProof", correctProof);
 
         // expect(zkSafeModule.sendZkSafeTransaction(
         //     await safe.getAddress(),
@@ -286,7 +243,6 @@ describe("ZkSafeModule", function () {
         //     correctProof
         // )).to.not.be.reverted;
     });
-
     
     it("Should fail to verify a nonexistent contract", async function () {
 

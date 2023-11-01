@@ -64,6 +64,6 @@ fn verify_signers<T, N>(threshold: u8, signers: [PubKey; T], signatures: [Signat
     assert(num_verified_signatures >= threshold);
 }
 
-fn main(threshold: pub u8, signers: [PubKey; 10], signatures: [Signature; 10], hash: pub Hash, owners: pub [Address; 10]) {
+fn main(threshold: pub u8, signers: [PubKey; 4], signatures: [Signature; 4], hash: pub Hash, owners: pub [Address; 4]) {
     verify_signers(threshold, signers, signatures, hash, owners);
 }
