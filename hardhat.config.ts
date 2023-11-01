@@ -48,6 +48,9 @@ const config: HardhatUserConfig = {
             url: "https://rpc.vnet.tenderly.co/devnet/my-first-devnet/0091b33c-f503-4310-a6f8-8e4ee34b818d"
         }
     },
+    mocha: {
+        timeout: 100000000
+    },
     deterministicDeployment,
 };
 

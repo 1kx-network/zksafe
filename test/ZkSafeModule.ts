@@ -228,10 +228,10 @@ describe("ZkSafeModule", function () {
 
         const input = {
             threshold: await safe.getThreshold(),
-            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.utils.recoverPublicKey(txHash, sig))), 4, zero_pubkey),
-            signatures: padArray(signatures.map(extractRSFromSignature), 4, zero_signature),
+            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.utils.recoverPublicKey(txHash, sig))), 3, zero_pubkey),
+            signatures: padArray(signatures.map(extractRSFromSignature), 3, zero_signature),
             hash: Array.from(ethers.utils.arrayify(txHash)),
-            owners: padArray((await safe.getOwners()).map(addressToArray), 4, zero_address),
+            owners: padArray((await safe.getOwners()).map(addressToArray), 6, zero_address),
         };
         console.log("input", JSON.stringify(input));
         correctProof = await noir.generateFinalProof(input);
