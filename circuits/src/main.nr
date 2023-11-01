@@ -46,8 +46,9 @@ fn verify_signers<T, N>(threshold: u8, signers: [PubKey; T], signatures: [Signat
             for j in 0..20 {
                 address[j] = pubkey_hash[j + 12];
             }
-            // Check that the addresses are sorted in the list.
+            // Check the uniquiness of each signature by requiring and asserting they are sorted in strictly increasing order.
             // We need this to avoid the same signature being used mulitple times.
+            // (Check Safe verification code for more details - it does the same checking).
             assert(cmp_gt(address, curr_owner));
             // Check that the address is in the list of owners.
             let mut found = false;

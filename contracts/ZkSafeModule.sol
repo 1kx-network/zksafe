@@ -8,6 +8,7 @@ pragma solidity ^0.8.12;
 import {UltraVerifier} from "../circuits/contract/circuits/plonk_vk.sol";
 import "@gnosis.pm/safe-contracts/contracts/common/Enum.sol";
 import "@gnosis.pm/safe-contracts/contracts/GnosisSafe.sol";
+import "hardhat/console.sol";
 
 contract ZkSafeModule {
 
@@ -25,33 +26,38 @@ contract ZkSafeModule {
     }
 
     function verifyZkSafeTransaction(GnosisSafe safeContract, bytes32 txHash, bytes calldata proof) public view returns (bool) {
+        console.log("Proof length: %d", proof.length);
         // Construct the input to the circuit.
-        bytes32[] memory publicInputs = new bytes32[](33);
+        // We need 33 + 6 * 20 = 153 bytes of public inputs.
+        bytes32[] memory publicInputs = new bytes32[](1 + 32 + 6 * 20);
 
         // Threshold
         uint threshold = safeContract.getThreshold();
         require(threshold > 0, "Threshold must be greater than 0");
         require(threshold < 256, "Threshold must be less than 256");
         publicInputs[0] = bytes32(threshold);
+        console.logBytes32(publicInputs[0]);
 
         // Each byte of the transaction hash is given as a separate uint256 value.
         // TODO: this is super inefficient, fix by making the circuit take compressed inputs.
         for (uint256 i = 0; i < 32; i++) {
-            publicInputs[i + 1] = txHash[i];
+            publicInputs[i + 1] = bytes32(uint256(uint8(txHash[i])));
+            console.logBytes32(publicInputs[i + 1]);
         }
     
         address[] memory owners = safeContract.getOwners();
         require(owners.length > 0, "No owners");
-        require(owners.length <= 10, "Too many owners");
+        require(owners.length <= 6, "Too many owners");
 
         // Each Address is unpacked into 20 separate bytes, each of which is given as a separate uint256 value.
         // TODO: this is super inefficient, fix by making the circuit take compressed inputs.
         for (uint256 i = 0; i < owners.length; i++) {
             for (uint256 j = 0; j < 20; j++) {
                 publicInputs[i * 20 + j + 33] = bytes32(uint256(uint8(bytes20(owners[i])[j])));
+                console.logBytes32(publicInputs[i * 20 + j + 33]);
             }
         }
-        for (uint256 i = owners.length; i < 10; i++) {
+        for (uint256 i = owners.length; i < 6; i++) {
             for (uint256 j = 0; j < 20; j++) {
                 publicInputs[i * 20 + j + 33] = bytes32(0);
             }
@@ -85,6 +91,7 @@ contract ZkSafeModule {
                 nonce
             ));
 
+        console.logBytes32(txHash);
         require(verifyZkSafeTransaction(safeContract, txHash, proof), "Invalid proof");
         // All checks are successful, can execute the transaction.
         return safeContract.execTransactionFromModule(
