@@ -181,9 +181,9 @@ describe("ZkSafeModule", function () {
         const sig2 = await ownerAdapters[1].signTypedData(safeTypedData);
         const sig3 = await ownerAdapters[2].signTypedData(safeTypedData);
 
-        const zero_pubkey = { x: new Array(32).fill("0"), y: new Array(32).fill("0") };
-        const zero_signature = new Array(64).fill("0");
-        const zero_address = new Array(20).fill("0");
+        const zero_pubkey = { x: new Array(32).fill(0), y: new Array(32).fill(0) };
+        const zero_signature = new Array(64).fill(0);
+        const zero_address = new Array(20).fill(0);
 
         const signatures = [sig1, sig2, sig3];
         
@@ -207,10 +207,10 @@ describe("ZkSafeModule", function () {
 
 
         const safeAddress = await safe.getAddress();
-        const directVerification = await verifierContract.verify(correctProof["proof"], correctProof["publicInputs"]);
+        const directVerification = await verifierContract.verify(correctProof["proof"], [...correctProof["publicInputs"].values()]);
         console.log("directVerification", directVerification);
 
-        const contractVerification = await verifierContract.verifyZkSafeTransaction(safeAddress, txHash, correctProof["proof"]);
+        const contractVerification = await zkSafeModule.verifyZkSafeTransaction(safeAddress, txHash, correctProof["proof"]);
         console.log("contractVerification", contractVerification);
 
         const txn = await zkSafeModule.sendZkSafeTransaction(
