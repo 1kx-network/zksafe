@@ -213,9 +213,15 @@ describe("ZkSafeModule", function () {
         const contractVerification = await zkSafeModule.verifyZkSafeTransaction(safeAddress, txHash, correctProof["proof"]);
         console.log("contractVerification", contractVerification);
 
+        console.log("safe: ", safe);
+        console.log("transaction: ", transaction);
         const txn = await zkSafeModule.sendZkSafeTransaction(
-            await safe.getAddress(),
-            transaction,
+            safeAddress,
+            { to: transaction["data"]["to"],
+              value: ethers.BigNumber.from(transaction["data"]["value"]),
+              data: transaction["data"]["data"],
+              operation: transaction["data"]["operation"],
+            },
             correctProof["proof"],
             { gasLimit: 2000000 }
         );
