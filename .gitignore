@@ -3,6 +3,8 @@ cache/
 out/
 artifacts/
 deployments/
+crs/
+circuits/crs/
 
 # Ignores development broadcast logs
 !/broadcast
