@@ -118,17 +118,6 @@ describe("ZkSafeModule", function () {
             threshold: 2,
         };
 
-        safe = await safeFactory.deploySafe({ safeAccountConfig });
-
-        // const safeFactory = await SafeFactory.create({ ethAdapter: ownerAdapters[0] });
-        // const safeAccountConfig: SafeAccountConfig =  {
-        //     owners,
-        //     threshold: 2
-        // };
-        // safe = await safeFactory.deploySafe({ safeAccountConfig })
-        const safeAddress = await safe.getAddress();
-        console.log("safeAddress", safeAddress);
-
         const verifierContractFactory = await ethers.getContractFactory("UltraVerifier");
         verifierContract = await verifierContractFactory.deploy();
         console.log("verifierContract", verifierContract.address);
@@ -136,6 +125,14 @@ describe("ZkSafeModule", function () {
         const ZkSafeModule = await ethers.getContractFactory("ZkSafeModule");
         zkSafeModule = await ZkSafeModule.deploy(verifierContract.address);
         console.log("zkSafeModule", zkSafeModule.address);
+
+        safeAccountConfig.to = zkSafeModule.address;
+        const iface = new ethers.utils.Interface(["function enableModule(address module)"]);
+        safeAccountConfig.data = iface.encodeFunctionData("enableModule", [zkSafeModule.address]);
+
+        safe = await safeFactory.deploySafe({ safeAccountConfig });
+        const safeAddress = await safe.getAddress();
+        console.log("safeAddress", safeAddress);
 
         // [api, acirComposer, acirBuffer, acirBufferUncompressed] = await initCircuits();
 
