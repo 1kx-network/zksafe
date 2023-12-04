@@ -10,14 +10,17 @@ import "@gnosis.pm/safe-contracts/contracts/common/Enum.sol";
 import "@gnosis.pm/safe-contracts/contracts/GnosisSafe.sol";
 import "hardhat/console.sol";
 
+/* @title ZkSafeModule
+ * @dev This contract implements a module for Gnosis Safe that allows for zk-SNARK verification of transactions.
+ */
 contract ZkSafeModule {
-
     UltraVerifier verifier;
 
     constructor(UltraVerifier _verifier) {
         verifier = _verifier;
     }
 
+    // Basic representation of a Gnosis Safe transaction supported by zkSafe.
     struct Transaction {
         address to;
         uint256 value;
@@ -25,13 +28,27 @@ contract ZkSafeModule {
         Enum.Operation operation;
     }
 
-    // Can only be called as delegatecall from a GnosisSafe during setup.
+    /*
+     * @dev Enables a module on a Gnosis Safe contract.
+     * @param module The address of the module to enable.
+     */
     function enableModule(address module) external {
         address payable thisAddr = payable(address(this));
         GnosisSafe(thisAddr).enableModule(module);
     }
 
-    function verifyZkSafeTransaction(GnosisSafe safeContract, bytes32 txHash, bytes calldata proof) public view returns (bool) {
+    /*
+     * @dev Verifies a zk-SNARK proof for a Gnosis Safe transaction.
+     * @param safeContract The address of the Gnosis Safe contract.
+     * @param txHash The hash of the transaction to be verified.
+     * @param proof The zk-SNARK proof.
+     * @return True if the proof is valid, false otherwise.
+     */
+    function verifyZkSafeTransaction(
+        GnosisSafe safeContract,
+        bytes32 txHash,
+        bytes calldata proof
+    ) public view returns (bool) {
         // Construct the input to the circuit.
         // We need 33 + 6 * 20 = 153 bytes of public inputs.
         bytes32[] memory publicInputs = new bytes32[](1 + 32 + 6 * 20);
@@ -47,7 +64,7 @@ contract ZkSafeModule {
         for (uint256 i = 0; i < 32; i++) {
             publicInputs[i + 1] = bytes32(uint256(uint8(txHash[i])));
         }
-    
+
         address[] memory owners = safeContract.getOwners();
         require(owners.length > 0, "No owners");
         require(owners.length <= 6, "Too many owners");
@@ -56,7 +73,9 @@ contract ZkSafeModule {
         // TODO: this is super inefficient, fix by making the circuit take compressed inputs.
         for (uint256 i = 0; i < owners.length; i++) {
             for (uint256 j = 0; j < 20; j++) {
-                publicInputs[i * 20 + j + 33] = bytes32(uint256(uint8(bytes20(owners[i])[j])));
+                publicInputs[i * 20 + j + 33] = bytes32(
+                    uint256(uint8(bytes20(owners[i])[j]))
+                );
             }
         }
         for (uint256 i = owners.length; i < 6; i++) {
@@ -66,9 +85,15 @@ contract ZkSafeModule {
         }
         // Get the owners of the Safe by calling into the Safe contract.
         return verifier.verify(proof, publicInputs);
-
     }
 
+    /*
+     * @dev Sends a transaction to a Gnosis Safe contract.
+     * @param safeContract The address of the Gnosis Safe contract.
+     * @param transaction The transaction to be sent.
+     * @param proof The zk-SNARK proof.
+     * @return True if the transaction was successful, false otherwise.
+     */
     function sendZkSafeTransaction(
         GnosisSafe safeContract,
         // The Safe address to which the transaction will be sent.
@@ -77,7 +102,8 @@ contract ZkSafeModule {
         bytes calldata proof
     ) public payable virtual returns (bool) {
         uint256 nonce = safeContract.nonce();
-        bytes32 txHash = keccak256(safeContract.encodeTransactionData(
+        bytes32 txHash = keccak256(
+            safeContract.encodeTransactionData(
                 // Transaction info
                 transaction.to,
                 transaction.value,
@@ -91,13 +117,18 @@ contract ZkSafeModule {
                 address(0),
                 // Signature info
                 nonce
-            ));
+            )
+        );
 
         console.logBytes32(txHash);
-        // require(verifyZkSafeTransaction(safeContract, txHash, proof), "Invalid proof");
+        require(verifyZkSafeTransaction(safeContract, txHash, proof), "Invalid proof");
         // All checks are successful, can execute the transaction.
-        return safeContract.execTransactionFromModule(
-            transaction.to, transaction.value, transaction.data, transaction.operation
-        );
+        return
+            safeContract.execTransactionFromModule(
+                transaction.to,
+                transaction.value,
+                transaction.data,
+                transaction.operation
+            );
     }
 }

@@ -223,10 +223,12 @@ describe("ZkSafeModule", function () {
             { gasLimit: 2000000 }
         );
 
+        let receipt = txn.wait();
         expect(txn).to.not.be.reverted;
+        console.log("Verification gas used: ", receipt.gasUsed);
     });
 
-    xit("Should fail to verify a nonexistent contract", async function () {
+    it("Should fail to verify a nonexistent contract", async function () {
 
         const transaction  = {
             to: "0x0000000000000000000000000000000000000000",
@@ -257,10 +259,10 @@ describe("ZkSafeModule", function () {
             await safe.getAddress(),
             transaction,
             "0x0000000000000000", // proof
-            { gasLimit: 20000000 }
+            { gasLimit: 2000000 }
         );
 
-        // expect(txn).to.be.revertedWith("Invalid proof");
+        expect(txn).to.be.revertedWith("Invalid proof");
     });
 
 });
