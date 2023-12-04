@@ -7,8 +7,6 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "module": "CommonJS",
-    "moduleResolution": "Node",
-    "isolatedModules": true,
   },
   "exclude": ["dist", "node_modules"],
   "include": ["./test", "./src", "circuits/scripts"],

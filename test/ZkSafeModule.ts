@@ -1,9 +1,11 @@
-import hre, { ethers, network, deployments } from 'hardhat';
+import hre, { ethers, network, ignition } from 'hardhat';
+import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+  
 import { expect } from "chai";
 import { ZkSafeModule } from "../typechain-types";
+import ZkSafe from "../../../../../var/folders/8x/93pvkffj7dvcqtv4tmy96l2w0000gn/T/!Users!valeryz!1kx!zksafe!ignition!modules!ZkSafe.ts~";
 
 import circuit from '../circuits/target/circuits.json';
-import { decompressSync } from 'fflate';
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
 import { Noir } from '@noir-lang/noir_js';
 import { EthersAdapter, SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit';
@@ -72,16 +74,9 @@ describe("ZkSafeModule", function () {
     let noir: Noir;
     let correctProof: Uint8Array;
 
-    async function generateProof(witness: Uint8Array) {
-        const proof = await api.acirCreateProof(
-          acirComposer,
-          acirBufferUncompressed,
-          decompressSync(witness),
-          false,
-        );
-        return proof;
+    async function deployZkSafe() {
+        return ignition.deploy(ZkSafe);
     }
-
 
     before(async function () {
         ownerAdapters = await getOwnerAdapters();
@@ -89,26 +84,26 @@ describe("ZkSafeModule", function () {
         let owners = await Promise.all(ownerAdapters.map((oa) => (oa.getSigner()?.getAddress() as string)));
         console.log("owners", owners);
 
-        await deployments.fixture();
+        // await deployments.fixture();
+        const deployments = await deployZkSafe();
 
-        const deployedSafe = await deployments.get("GnosisSafeL2");
-        const deployedSafeFactory = await deployments.get("GnosisSafeProxyFactory");
-        const deployedMultiSend = await deployments.get("MultiSend");
-        const deployedMultiSendCallOnly = await deployments.get("MultiSendCallOnly");
-        const deployedCompatibilityFallbackHandler = await deployments.get("CompatibilityFallbackHandler");
-        const deployedSignMessageLib = await deployments.get("SignMessageLib");
-        const deployedCreateCall = await deployments.get("CreateCall");
-//        const deployedSimulateTxAccessor = await deployments.get("SimulateTxAccessor");
+        const deployedSafe = deployments.GnosisSafeL2;
+        const deployedSafeFactory = deployments.GnosisSafeProxyFactory;
+        const deployedMultiSend = deployments.MultiSend;
+        const deployedMultiSendCallOnly = deployments.MultiSendCallOnly;
+        const deployedCompatibilityFallbackHandler = deployments.CompatibilityFallbackHandler;
+        const deployedSignMessageLib = deployments.SignMessageLib;
+        const deployedCreateCall = deployments.CreateCall;
         const chainId: number = await ownerAdapters[0].getChainId();
         const contractNetworks = {
             [chainId]: {
-                    safeMasterCopyAddress: deployedSafe.address,
-                    safeProxyFactoryAddress: deployedSafeFactory.address,
-                    multiSendAddress: deployedMultiSend.address,
-                    multiSendCallOnlyAddress: deployedMultiSendCallOnly.address,
-                    fallbackHandlerAddress: deployedCompatibilityFallbackHandler.address,
-                    signMessageLibAddress: deployedSignMessageLib.address,
-                    createCallAddress: deployedCreateCall.address,
+                safeMasterCopyAddress: await deployedSafe.getAddress(),
+                    safeProxyFactoryAddress: await deployedSafeFactory.getAddress(),
+                    multiSendAddress: await deployedMultiSend.getAddress(),
+                    multiSendCallOnlyAddress: deployedMultiSendCallOnly.getAddress(),
+                    fallbackHandlerAddress: deployedCompatibilityFallbackHandler.getAddress(),
+                    signMessageLibAddress: deployedSignMessageLib.getAddress(),
+                    createCallAddress: deployedCreateCall.getAddress(),
                     simulateTxAccessorAddress: ethers.constants.AddressZero,
             }
         };
