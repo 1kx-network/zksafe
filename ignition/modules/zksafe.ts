@@ -11,5 +11,6 @@ export default buildModule("ZkSafe", (m) => {
     const MultiSendCallOnly = m.contract("MultiSendCallOnly", []);
     const SignMessageLib = m.contract("SignMessageLib", []);
 
+
     return { GnosisSafe, GnosisSafeL2, GnosisSafeProxyFactory, DefaultCallbackHandler, CompatibilityFallbackHandler, CreateCall, MultiSend, MultiSendCallOnly, SignMessageLib };
 });

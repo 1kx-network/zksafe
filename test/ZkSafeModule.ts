@@ -1,9 +1,8 @@
-import hre, { ethers, network, ignition } from 'hardhat';
+import hre, { ethers, network, deployments } from 'hardhat';
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
   
 import { expect } from "chai";
 import { ZkSafeModule } from "../typechain-types";
-import ZkSafe from "../../../../../var/folders/8x/93pvkffj7dvcqtv4tmy96l2w0000gn/T/!Users!valeryz!1kx!zksafe!ignition!modules!ZkSafe.ts~";
 
 import circuit from '../circuits/target/circuits.json';
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
@@ -50,7 +49,7 @@ function addressToArray(address: string): number[] {
     if (address.length !== 42 || !address.startsWith('0x')) {
         throw new Error('Address should be a 40-character hex string starting with 0x.');
     }
-    return Array.from(ethers.utils.arrayify(address));
+    return Array.from(ethers.getBytes(address));
 }
 
 function padArray(arr: any[], length: number, fill: any = 0) {
@@ -82,29 +81,20 @@ describe("ZkSafeModule", function () {
         ownerAdapters = await getOwnerAdapters();
         // Deploy Safe
         let owners = await Promise.all(ownerAdapters.map((oa) => (oa.getSigner()?.getAddress() as string)));
-        console.log("owners", owners);
 
-        // await deployments.fixture();
-        const deployments = await deployZkSafe();
-
-        const deployedSafe = deployments.GnosisSafeL2;
-        const deployedSafeFactory = deployments.GnosisSafeProxyFactory;
-        const deployedMultiSend = deployments.MultiSend;
-        const deployedMultiSendCallOnly = deployments.MultiSendCallOnly;
-        const deployedCompatibilityFallbackHandler = deployments.CompatibilityFallbackHandler;
-        const deployedSignMessageLib = deployments.SignMessageLib;
-        const deployedCreateCall = deployments.CreateCall;
+        await deployments.fixture();
+        // const deployments = await loadFixture(deployZkSafe);
         const chainId: number = await ownerAdapters[0].getChainId();
         const contractNetworks = {
             [chainId]: {
-                safeMasterCopyAddress: await deployedSafe.getAddress(),
-                    safeProxyFactoryAddress: await deployedSafeFactory.getAddress(),
-                    multiSendAddress: await deployedMultiSend.getAddress(),
-                    multiSendCallOnlyAddress: deployedMultiSendCallOnly.getAddress(),
-                    fallbackHandlerAddress: deployedCompatibilityFallbackHandler.getAddress(),
-                    signMessageLibAddress: deployedSignMessageLib.getAddress(),
-                    createCallAddress: deployedCreateCall.getAddress(),
-                    simulateTxAccessorAddress: ethers.constants.AddressZero,
+                safeMasterCopyAddress: await  deployments.get("GnosisSafeL2").address,
+                safeProxyFactoryAddress: await deployments.get("GnosisSafeProxyFactory").address,
+                multiSendAddress: await deployments.get("MultiSend").address,
+                multiSendCallOnlyAddress: await deployments.get("MultiSendCallOnly").address,
+                fallbackHandlerAddress: await deployments.get("CompatibilityFallbackHandler").address,
+                signMessageLibAddress: await deployments.get("SignMessageLib").address,
+                createCallAddress: await deployments.get("CreateCall").address,
+                simulateTxAccessorAddress: ethers.ZeroAddress,
             }
         };
         const safeFactory = await SafeFactory.create({ ethAdapter: ownerAdapters[0], contractNetworks });
@@ -144,7 +134,7 @@ describe("ZkSafeModule", function () {
         const nonce = await safe.getNonce();
         const threshold = await safe.getThreshold();
         const safeTransactionData : SafeTransactionData = {
-            to: ethers.constants.AddressZero,
+            to: ethers.ZeroAddress,
             value: "0x0",
             data: "0x",
             operation: 0,
@@ -152,8 +142,8 @@ describe("ZkSafeModule", function () {
             safeTxGas: "0x0",
             baseGas: "0x0",
             gasPrice: "0x0",
-            gasToken: ethers.constants.AddressZero,
-            refundReceiver: ethers.constants.AddressZero,
+            gasToken: ethers.ZeroAddress,
+            refundReceiver: ethers.ZeroAddress,
             nonce, 
         }
         console.log("transaction", safeTransactionData);
@@ -180,13 +170,13 @@ describe("ZkSafeModule", function () {
         const signatures = [sig1, sig2, sig3];
         
         // Sort signatures by address - this is how the Safe contract does it.
-        signatures.sort((sig1, sig2) => ethers.utils.recoverAddress(txHash, sig1).localeCompare(ethers.utils.recoverAddress(txHash, sig2)));
+        signatures.sort((sig1, sig2) => ethers.recoverAddress(txHash, sig1).localeCompare(ethers.recoverAddress(txHash, sig2)));
 
         const input = {
             threshold: await safe.getThreshold(),
-            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.utils.recoverPublicKey(txHash, sig))), 3, zero_pubkey),
+            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 3, zero_pubkey),
             signatures: padArray(signatures.map(extractRSFromSignature), 3, zero_signature),
-            hash: Array.from(ethers.utils.arrayify(txHash)),
+            hash: Array.from(ethers.getBytes(txHash)),
             owners: padArray((await safe.getOwners()).map(addressToArray), 6, zero_address),
         };
         console.log("input", JSON.stringify(input));

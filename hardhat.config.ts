@@ -1,6 +1,5 @@
 import { HardhatUserConfig } from "hardhat/types";
-import "@nomicfoundation/hardhat-ignition";
-// import "hardhat-deploy";
+import "hardhat-deploy";
 // import "@nomiclabs/hardhat-ethers";
 import "@nomicfoundation/hardhat-ethers";
 import "@nomicfoundation/hardhat-chai-matchers";
