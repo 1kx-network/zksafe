@@ -27,7 +27,7 @@ fn cmp_gt<N>(a: [u8; N], b: [u8; N]) -> bool {
 }
 
 /// Verify if the signatures are valid and the signers are in the owners list.
-fn verify_signers<T, N>(threshold: u8, signers: [PubKey; T], signatures: [Signature; T], hash: Hash, owners: [Address; N]) {
+fn verify_signers<T, N>(threshold: u8, signers: [PubKey; T], signatures: [Signature; T], txn_hash: Hash, owners: [Address; N]) {
     let mut curr_owner = [0; 20];
     let mut num_verified_signatures = 0;
     for i in 0..T {
@@ -65,6 +65,6 @@ fn verify_signers<T, N>(threshold: u8, signers: [PubKey; T], signatures: [Signat
     assert(num_verified_signatures >= threshold);
 }
 
-fn main(threshold: pub u8, signers: [PubKey; 3], signatures: [Signature; 3], hash: pub Hash, owners: pub [Address; 6]) {
-    verify_signers(threshold, signers, signatures, hash, owners);
+fn main(threshold: pub u8, signers: [PubKey; 3], signatures: [Signature; 3], txn_hash: pub Hash, owners: pub [Address; 6]) {
+    verify_signers(threshold, signers, signatures, txn_hash, owners);
 }

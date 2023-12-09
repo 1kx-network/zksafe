@@ -1,12 +1,13 @@
 import { HardhatUserConfig } from "hardhat/types";
 import "hardhat-deploy";
-import "@nomiclabs/hardhat-ethers";
-import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomicfoundation/hardhat-ethers";
+import "@nomicfoundation/hardhat-ignition";
 
 import { BigNumber } from "@ethersproject/bignumber";
 import { DeterministicDeploymentInfo } from "hardhat-deploy/dist/types";
 import { getSingletonFactoryInfo } from "@gnosis.pm/safe-singleton-factory";
 
+import { zksend, sign, prove } from "./zksafe/zksafe";
 
 // copied from @safe-global/safe-contracts
 const deterministicDeployment = (network: string): DeterministicDeploymentInfo => {
@@ -24,6 +25,36 @@ const deterministicDeployment = (network: string): DeterministicDeploymentInfo =
         signedTx: info.transaction,
     };
 };
+
+task("zksend", "Send a zksafe transaction with a proof")
+    .addParam("safe", "Address of the Safe")
+    .addParam("to", "Address of the recipient")
+    .addParam("value", "Value to send")
+    .addParam("data", "Calldata to send")
+    .addParam("proof", "The proof")
+    .setAction(async (taskArgs, hre) => zksend(hre, taskArgs.safe, taskArgs.to, taskArgs.value, taskArgs.data, taskArgs.proof));
+
+task("prove", "Prove a zksafe transaction") 
+    .addParam("safe", "Address of the Safe")
+    .addParam("txhash", "Transaction hash")
+    .addParam("signatures", "Signatures (comma separated)")
+    .setAction(async (taskArgs, hre) => prove(hre, taskArgs.safe, taskArgs.txhash, taskArgs.signatures));
+    
+task("sign", "Sign Safe transaction")
+    .addParam("safe", "Address of the Safe")
+    .addParam("to", "Address of the recipient")
+    .addParam("value", "Value to Send")
+    .addParam("data", "Calldata to send")
+    .setAction(async (taskArgs, hre) => sign(hre, taskArgs.safe, taskArgs.to, taskArgs.value, taskArgs.data));
+
+const getAccounts = function(): string[] {
+    let accounts = [];
+    accounts.push(vars.get("SAFE_OWNER_PRIVATE_KEY"));
+    if (vars.has("DEPLOYER_PRIVATE_KEY")) {
+        accounts.push(vars.get("DEPLOYER_PRIVATE_KEY"));
+    }
+    return accounts;
+}
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -44,9 +75,11 @@ const config: HardhatUserConfig = {
         localhost: {
             url: "http://127.0.0.1:8545"
         },
-        tenderly: {
-            url: "https://rpc.vnet.tenderly.co/devnet/my-first-devnet/0091b33c-f503-4310-a6f8-8e4ee34b818d"
-        }
+        gnosis: {
+            url: "https://rpc.buildbear.io/miserable-shmi-skywalker-0e307152",
+            // url:  "https://gnosis-pokt.nodies.app",
+            accounts: getAccounts(),
+        },  
     },
     mocha: {
         timeout: 100000000

@@ -3,16 +3,11 @@ import { expect } from "chai";
 import { ZkSafeModule } from "../typechain-types";
 
 import circuit from '../circuits/target/circuits.json';
-import { decompressSync } from 'fflate';
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
 import { Noir } from '@noir-lang/noir_js';
 import { EthersAdapter, SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit';
 import Safe from '@safe-global/protocol-kit';
 import { SafeTransactionData } from '@safe-global/safe-core-sdk-types';
-
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 async function getOwnerAdapters(): Promise<EthersAdapter[]> {
     return (await ethers.getSigners()).slice(0, 3).map((signer) => new EthersAdapter({ ethers, signerOrProvider: signer }));
@@ -57,31 +52,13 @@ function padArray(arr: any[], length: number, fill: any = 0) {
 
 describe("ZkSafeModule", function () {
     let ownerAdapters: EthersAdapter[];
-    // let safeContract: SafeContract;
     let zkSafeModule: ZkSafeModule;
     let safe: Safe;
     let verifierContract: any;
 
-    // Old Noir Way
-    let api: any;
-    let acirComposer: any;
-    let acirBuffer: Buffer;
-    let acirBufferUncompressed: Buffer;
-
     // New Noir Way
     let noir: Noir;
     let correctProof: Uint8Array;
-
-    async function generateProof(witness: Uint8Array) {
-        const proof = await api.acirCreateProof(
-          acirComposer,
-          acirBufferUncompressed,
-          decompressSync(witness),
-          false,
-        );
-        return proof;
-    }
-
 
     before(async function () {
         ownerAdapters = await getOwnerAdapters();

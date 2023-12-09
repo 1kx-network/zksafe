@@ -20,6 +20,10 @@ contract ZkSafeModule {
         verifier = _verifier;
     }
 
+    function zkSafeModuleVersion() public pure returns (string memory) {
+        return "ZkSafeModule/v0.0.1";
+    }
+
     // Basic representation of a Gnosis Safe transaction supported by zkSafe.
     struct Transaction {
         address to;
