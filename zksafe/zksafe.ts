@@ -37,7 +37,7 @@ function addressToArray(address: string): number[] {
     if (address.length !== 42 || !address.startsWith('0x')) {
         throw new Error('Address should be a 40-character hex string starting with 0x.');
     }
-    return Array.from(ethers.utils.arrayify(address));
+    return Array.from(ethers.getBytes(address));
 }
 
 function padArray(arr: any[], length: number, fill: any = 0) {
@@ -65,13 +65,13 @@ export async function zksend(hre, safeAddr: string, to: string, value: string, d
     console.log("  threshold: ", threshold);
     console.log("  nonce: ", await safe.getNonce());
     console.log("  chainId: ", await safe.getChainId());
-    console.log("  balance: ", ethers.utils.formatEther(await safe.getBalance()));
+    console.log("  balance: ", ethers.formatEther(await safe.getBalance()));
 
     const modules = await safe.getModules();
     let zkSafeModule = null;
     for (let i = 0; i < modules.length; i++) {
-      const address = ethers.utils.getAddress(modules[i]);
-      const ZkSafeModule = await ethers.getContractFactory("ZkSafeModule");
+      const address = ethers.getAddress(modules[i]);
+      const ZkSafeModule = await hre.ethers.getContractFactory("ZkSafeModule");
       const module = await ZkSafeModule.attach(address);
       try {
           const version = await module.version();
@@ -115,7 +115,7 @@ export async function prove(hre, safeAddr: string, txHash: string, signatures_: 
     console.log("  threshold: ", threshold);
     console.log("  nonce: ", await safe.getNonce());
     console.log("  chainId: ", await safe.getChainId());
-    console.log("  balance: ", ethers.utils.formatEther(await safe.getBalance()));
+    console.log("  balance: ", ethers.formatEther(await safe.getBalance()));
 
     const backend = new BarretenbergBackend(circuit);
     const noir = new Noir(circuit, backend);
@@ -129,16 +129,16 @@ export async function prove(hre, safeAddr: string, txHash: string, signatures_: 
     const signatures = signatures_.split(",");
    
     // Sort signatures by address - this is how the Safe contract does it.
-    signatures.sort((sig1, sig2) => ethers.utils.recoverAddress(txHash, sig1).localeCompare(ethers.utils.recoverAddress(txHash, sig2)));
+    signatures.sort((sig1, sig2) => ethers.recoverAddress(txHash, sig1).localeCompare(ethers.recoverAddress(txHash, sig2)));
     const input = {
         threshold: await safe.getThreshold(),
-        signers: padArray(signatures.map((sig) => extractCoordinates(ethers.utils.recoverPublicKey(txHash, sig))), 3, zero_pubkey),
+        signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 3, zero_pubkey),
         signatures: padArray(signatures.map(extractRSFromSignature), 3, zero_signature),
-        hash: Array.from(ethers.utils.arrayify(txHash)),
+        hash: Array.from(ethers.getBytes(txHash)),
         owners: padArray((await safe.getOwners()).map(addressToArray), 6, zero_address),
     };
     const correctProof = await noir.generateFinalProof(input);
-    console.log("Proof: ", ethers.utils.hexlify(correctProof.proof));
+    console.log("Proof: ", ethers.getBytes(correctProof.proof));
 }
 
 export async function sign(hre, safeAddr: string, to: string, value: string, data: string) {
@@ -162,7 +162,7 @@ export async function sign(hre, safeAddr: string, to: string, value: string, dat
     console.log("  threshold: ", threshold);
     console.log("  nonce: ", await safe.getNonce());
     console.log("  chainId: ", await safe.getChainId());
-    console.log("  balance: ", ethers.utils.formatEther(await safe.getBalance()));
+    console.log("  balance: ", ethers.formatEther(await safe.getBalance()));
 
     const safeTransactionData : SafeTransactionData = {
       to,
@@ -173,13 +173,13 @@ export async function sign(hre, safeAddr: string, to: string, value: string, dat
       safeTxGas: "0x0",
       baseGas: "0x0",
       gasPrice: "0x0",
-      gasToken: ethers.constants.AddressZero,
-      refundReceiver: ethers.constants.AddressZero,
+      gasToken: ethers.ZeroAddress,
+      refundReceiver: ethers.ZeroAddress,
       nonce: await safe.getNonce(), 
     };
 
     console.log("transaction", safeTransactionData);
-    const transaction = await safe.createTransaction({ safeTransactionData });
+    const transaction = await safe.createTransaction({ transactions: [safeTransactionData] });
     const txHash = await safe.getTransactionHash(transaction);
     console.log("txHash", txHash);
 
