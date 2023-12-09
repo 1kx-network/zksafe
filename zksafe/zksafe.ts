@@ -88,7 +88,7 @@ export async function zksend(hre, safeAddr: string, to: string, value: string, d
     const txn = await zkSafeModule.sendZkSafeTransaction(
         safeAddress,
         { to,
-          value: ethers.BigNumber.from(value),
+          value: BigInt(value),
           data,
           operation: 0
         },

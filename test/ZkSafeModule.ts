@@ -43,7 +43,7 @@ function addressToArray(address: string): number[] {
     if (address.length !== 42 || !address.startsWith('0x')) {
         throw new Error('Address should be a 40-character hex string starting with 0x.');
     }
-    return Array.from(ethers.utils.arrayify(address));
+    return Array.from(ethers.getBytes(address));
 }
 
 function padArray(arr: any[], length: number, fill: any = 0) {
@@ -77,16 +77,18 @@ describe("ZkSafeModule", function () {
         const deployedCreateCall = await deployments.get("CreateCall");
 //        const deployedSimulateTxAccessor = await deployments.get("SimulateTxAccessor");
         const chainId: number = await ownerAdapters[0].getChainId();
+        const chainIdStr = chainId.toString();
+        console.log("chainId: ", chainIdStr);
         const contractNetworks = {
-            [chainId]: {
-                    safeMasterCopyAddress: deployedSafe.address,
+            [chainIdStr]: {
+                    safeSingletonAddress: deployedSafe.address,
                     safeProxyFactoryAddress: deployedSafeFactory.address,
                     multiSendAddress: deployedMultiSend.address,
                     multiSendCallOnlyAddress: deployedMultiSendCallOnly.address,
                     fallbackHandlerAddress: deployedCompatibilityFallbackHandler.address,
                     signMessageLibAddress: deployedSignMessageLib.address,
                     createCallAddress: deployedCreateCall.address,
-                    simulateTxAccessorAddress: ethers.constants.AddressZero,
+                    simulateTxAccessorAddress: ethers.ZeroAddress,
             }
         };
         const safeFactory = await SafeFactory.create({ ethAdapter: ownerAdapters[0], contractNetworks });
@@ -97,15 +99,18 @@ describe("ZkSafeModule", function () {
 
         const verifierContractFactory = await ethers.getContractFactory("UltraVerifier");
         verifierContract = await verifierContractFactory.deploy();
-        console.log("verifierContract", verifierContract.address);
+        verifierContract.waitForDeployment();
+        console.log("verifierContract", await verifierContract.getAddress());
 
         const ZkSafeModule = await ethers.getContractFactory("ZkSafeModule");
-        zkSafeModule = await ZkSafeModule.deploy(verifierContract.address);
-        console.log("zkSafeModule", zkSafeModule.address);
+        zkSafeModule = await ZkSafeModule.deploy(await verifierContract.getAddress());
+        zkSafeModule.waitForDeployment();
+        const zkSafeModuleAddress = await zkSafeModule.getAddress();
+        console.log("zkSafeModule: ", zkSafeModuleAddress);
 
-        safeAccountConfig.to = zkSafeModule.address;
-        const iface = new ethers.utils.Interface(["function enableModule(address module)"]);
-        safeAccountConfig.data = iface.encodeFunctionData("enableModule", [zkSafeModule.address]);
+        safeAccountConfig.to = zkSafeModuleAddress;
+        const iface = new ethers.Interface(["function enableModule(address module)"]);
+        safeAccountConfig.data = iface.encodeFunctionData("enableModule", [zkSafeModuleAddress]);
 
         safe = await safeFactory.deploySafe({ safeAccountConfig });
         const safeAddress = await safe.getAddress();
@@ -126,7 +131,7 @@ describe("ZkSafeModule", function () {
         const nonce = await safe.getNonce();
         const threshold = await safe.getThreshold();
         const safeTransactionData : SafeTransactionData = {
-            to: ethers.constants.AddressZero,
+            to: ethers.ZeroAddress,
             value: "0x0",
             data: "0x",
             operation: 0,
@@ -134,12 +139,12 @@ describe("ZkSafeModule", function () {
             safeTxGas: "0x0",
             baseGas: "0x0",
             gasPrice: "0x0",
-            gasToken: ethers.constants.AddressZero,
-            refundReceiver: ethers.constants.AddressZero,
+            gasToken: ethers.ZeroAddress,
+            refundReceiver: ethers.ZeroAddress,
             nonce, 
         }
         console.log("transaction", safeTransactionData);
-        const transaction = await safe.createTransaction({ safeTransactionData });
+        const transaction = await safe.createTransaction({ transactions: [safeTransactionData] });
         const txHash = await safe.getTransactionHash(transaction);
         console.log("txHash", txHash);
 
@@ -162,13 +167,13 @@ describe("ZkSafeModule", function () {
         const signatures = [sig1, sig2, sig3];
         
         // Sort signatures by address - this is how the Safe contract does it.
-        signatures.sort((sig1, sig2) => ethers.utils.recoverAddress(txHash, sig1).localeCompare(ethers.utils.recoverAddress(txHash, sig2)));
+        signatures.sort((sig1, sig2) => ethers.recoverAddress(txHash, sig1).localeCompare(ethers.recoverAddress(txHash, sig2)));
 
         const input = {
             threshold: await safe.getThreshold(),
-            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.utils.recoverPublicKey(txHash, sig))), 3, zero_pubkey),
+            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 3, zero_pubkey),
             signatures: padArray(signatures.map(extractRSFromSignature), 3, zero_signature),
-            hash: Array.from(ethers.utils.arrayify(txHash)),
+            hash: Array.from(ethers.getBytes(txHash)),
             owners: padArray((await safe.getOwners()).map(addressToArray), 6, zero_address),
         };
         console.log("input", JSON.stringify(input));
@@ -192,7 +197,7 @@ describe("ZkSafeModule", function () {
         const txn = await zkSafeModule.sendZkSafeTransaction(
             safeAddress,
             { to: transaction["data"]["to"],
-              value: ethers.BigNumber.from(transaction["data"]["value"]),
+              value: BigInt(transaction["data"]["value"]),
               data: transaction["data"]["data"],
               operation: transaction["data"]["operation"],
             },
