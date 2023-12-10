@@ -8,7 +8,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { DeterministicDeploymentInfo } from "hardhat-deploy/dist/types";
 import { getSingletonFactoryInfo } from "@gnosis.pm/safe-singleton-factory";
 
-import { zksend, sign, prove } from "./zksafe/zksafe";
+import { zksend, sign, prove, createZkSafe } from "./zksafe/zksafe";
 
 // copied from @safe-global/safe-contracts
 const deterministicDeployment = (network: string): DeterministicDeploymentInfo => {
@@ -48,6 +48,11 @@ task("sign", "Sign Safe transaction")
     .addParam("data", "Calldata to send")
     .setAction(async (taskArgs, hre) => sign(hre, taskArgs.safe, taskArgs.to, taskArgs.value, taskArgs.data));
 
+task("createZkSafe", "Create a ZkSafe")
+    .addParam("owners", "Comma separated list of owners")
+    .addParam("threshold", "Threshold")
+    .setAction(async (taskArgs, hre) => createZkSafe(hre, taskArgs.owners.split(","), taskArgs.threshold));
+
 const getAccounts = function(): string[] {
     let accounts = [];
     accounts.push(vars.get("SAFE_OWNER_PRIVATE_KEY"));
@@ -74,7 +79,8 @@ const config: HardhatUserConfig = {
     },
     networks: {
         localhost: {
-            url: "http://127.0.0.1:8545"
+            url: "http://127.0.0.1:8545",
+            accounts: getAccounts(),
         },
         gnosis: {
             url: "https://rpc.buildbear.io/miserable-shmi-skywalker-0e307152",
