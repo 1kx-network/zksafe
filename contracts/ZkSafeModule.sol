@@ -135,14 +135,20 @@ contract ZkSafeModule {
         );
         require(verifyZkSafeTransaction(safeContract, txHash, proof), "Invalid proof");
         // All checks are successful, can execute the transaction.
+
+        // Safe doesn't increase the nonce for module transactions, so we need to take care of that.
         bytes memory data = abi.encodeWithSignature("increaseNonce(uint256)", nonce);
+        // We increase nonce by having Safe call us back at the increaseNonce() method as delegatecall
         safeContract.execTransactionFromModule(
             payable(address(this)),
             0,
             data,
             Enum.Operation.DelegateCall
         );
+        // must check this, as it can fail on an incompatible Safe contract version.
         require(safeContract.nonce() == nonce + 1, "Nonce not increased");
+
+        // All clean: can run the transaction.
         return safeContract.execTransactionFromModule(
             transaction.to,
             transaction.value,

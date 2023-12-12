@@ -84,6 +84,10 @@ const config: HardhatUserConfig = {
             url:  "https://gnosis-pokt.nodies.app",
             accounts: getAccounts(),
         },
+        buildbear: {
+            url:  "https://rpc.buildbear.io/1kx",
+            accounts: getAccounts(),
+        },
     },
     mocha: {
         timeout: 100000000
