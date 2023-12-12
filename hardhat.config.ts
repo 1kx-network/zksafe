@@ -55,10 +55,8 @@ task("createZkSafe", "Create a ZkSafe")
 
 const getAccounts = function(): string[] {
     let accounts = [];
+    accounts.push(vars.get("DEPLOYER_PRIVATE_KEY"));
     accounts.push(vars.get("SAFE_OWNER_PRIVATE_KEY"));
-    if (vars.has("DEPLOYER_PRIVATE_KEY")) {
-        accounts.push(vars.get("DEPLOYER_PRIVATE_KEY"));
-    }
     return accounts;
 }
 
@@ -83,10 +81,9 @@ const config: HardhatUserConfig = {
             accounts: getAccounts(),
         },
         gnosis: {
-            url: "https://rpc.buildbear.io/miserable-shmi-skywalker-0e307152",
-            // url:  "https://gnosis-pokt.nodies.app",
+            url:  "https://gnosis-pokt.nodies.app",
             accounts: getAccounts(),
-        },  
+        },
     },
     mocha: {
         timeout: 100000000

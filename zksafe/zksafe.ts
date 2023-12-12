@@ -49,8 +49,7 @@ function padArray(arr: any[], length: number, fill: any = 0) {
 
 export async function zksend(hre, safeAddr: string, to: string, value: string, data: string, proof: string) {
     // Sign transaction using safe-core-sdk.
-    const [mywallet] = await hre.ethers.getSigners();
-    // const mywallet = new hre.ethers.Wallet(vars.get("SAFE_OWNER_PRIVATE_KEY"), ethers.provider);
+    const [_, mywallet] = await hre.ethers.getSigners();  // 2nd account is the SAFE_OWNER_PRIVATE_KEY
     const mywalletAddress = mywallet.address;
     console.log("My wallet address: ", mywalletAddress);
 
@@ -107,8 +106,7 @@ export async function zksend(hre, safeAddr: string, to: string, value: string, d
 }
 
 export async function prove(hre, safeAddr: string, txHash: string, signatures_: string) {
-    const [mywallet] = await hre.ethers.getSigners();
-    // const mywallet = new hre.ethers.Wallet(vars.get("SAFE_OWNER_PRIVATE_KEY"), ethers.provider);
+    const [_, mywallet] = await hre.ethers.getSigners();  
     const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: mywallet });
     console.log("connecting to safe");
     const safe = await Safe.create({ ethAdapter, safeAddress: safeAddr });
@@ -150,7 +148,7 @@ export async function prove(hre, safeAddr: string, txHash: string, signatures_: 
 
 export async function sign(hre, safeAddr: string, to: string, value: string, data: string) {
     // Sign transaction using safe-core-sdk.
-    const [mywallet] = await hre.ethers.getSigners();
+    const [_, ywallet] = await hre.ethers.getSigners();
     console.log("initialized my wallet");
     const mywalletAddress = mywallet.address;
     console.log("My wallet address: ", mywalletAddress);
@@ -191,12 +189,11 @@ export async function sign(hre, safeAddr: string, to: string, value: string, dat
     console.log("txHash", txHash);
 
     const safeSig = await safe.signTypedData(transaction);
-
     console.log("Signature: ", safeSig.data);
 }
 
 export async function createZkSafe(hre, owners: string[], threshold: number) {
-    const [mywallet] = await hre.ethers.getSigners();
+    const [mywallet] = await hre.ethers.getSigners();  // Corresponds to DEPLOYER_PRIVATE_KEY
     console.log("initialized my wallet");
     const mywalletAddress = mywallet.address;
     console.log("My wallet address: ", mywalletAddress);

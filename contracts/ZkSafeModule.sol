@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
 
-// Uncomment this line to use console.log
-// import "hardhat/console.sol";
-
 pragma solidity ^0.8.12;
 
 import {UltraVerifier} from "../circuits/contract/circuits/plonk_vk.sol";
@@ -39,6 +36,19 @@ contract ZkSafeModule {
     function enableModule(address module) external {
         address payable thisAddr = payable(address(this));
         GnosisSafe(thisAddr).enableModule(module);
+    }
+
+    function increaseNonce(uint256 nonce) public {
+        // Nonce should be at 0x05 slot, but better verify this assumption.
+        assembly {
+            // Load the current nonce.
+            let currentNonce := sload(0x05)
+            // Check that the nonce is correct.
+            if iszero(eq(currentNonce, nonce)) {
+                revert(0, 0)
+            }
+            sstore(0x05, add(currentNonce, 1))
+        }
     }
 
     /*
@@ -123,15 +133,20 @@ contract ZkSafeModule {
                 nonce
             )
         );
-
-        console.logBytes32(txHash);
         require(verifyZkSafeTransaction(safeContract, txHash, proof), "Invalid proof");
         // All checks are successful, can execute the transaction.
-        return
-            safeContract.execTransactionFromModule(
-                transaction.to,
-                transaction.value,
-                transaction.data,
+        bytes memory data = abi.encodeWithSignature("increaseNonce(uint256)", nonce);
+        safeContract.execTransactionFromModule(
+            payable(address(this)),
+            0,
+            data,
+            Enum.Operation.DelegateCall
+        );
+        require(safeContract.nonce() == nonce + 1, "Nonce not increased");
+        return safeContract.execTransactionFromModule(
+            transaction.to,
+            transaction.value,
+            transaction.data,
                 transaction.operation
             );
     }
