@@ -160,23 +160,27 @@ describe("ZkSafeModule", function () {
         const sig2 = await ownerAdapters[1].signTypedData(safeTypedData);
         const sig3 = await ownerAdapters[2].signTypedData(safeTypedData);
 
-        const zero_pubkey = { x: new Array(32).fill(0), y: new Array(32).fill(0) };
-        const zero_signature = new Array(64).fill(0);
+        const nil_pubkey = {
+            x: Array.from(ethers.getBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")),
+            y: Array.from(ethers.getBytes("0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
+        };
+        // Our Nil signature is a signature with r and s set to 
+        const nil_signature = Array.from(
+            ethers.getBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"));
         const zero_address = new Array(20).fill(0);
 
-        const signatures = [sig1, sig2, sig3];
+        const signatures = [sig1, sig2]; // sig3 is not included, threshold of 2 should be enough.
         
         // Sort signatures by address - this is how the Safe contract does it.
         signatures.sort((sig1, sig2) => ethers.recoverAddress(txHash, sig1).localeCompare(ethers.recoverAddress(txHash, sig2)));
 
         const input = {
             threshold: await safe.getThreshold(),
-            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 3, zero_pubkey),
-            signatures: padArray(signatures.map(extractRSFromSignature), 3, zero_signature),
-            hash: Array.from(ethers.getBytes(txHash)),
+            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 3, nil_pubkey),
+            signatures: padArray(signatures.map(extractRSFromSignature), 3, nil_signature),
+            txn_hash: Array.from(ethers.getBytes(txHash)),
             owners: padArray((await safe.getOwners()).map(addressToArray), 6, zero_address),
         };
-        console.log("input", JSON.stringify(input));
         correctProof = await noir.generateFinalProof(input);
         console.log("correctProof", correctProof);
 
@@ -207,7 +211,8 @@ describe("ZkSafeModule", function () {
 
         let receipt = txn.wait();
         expect(txn).to.not.be.reverted;
-        console.log("Verification gas used: ", receipt.gasUsed);
+        let newNonce = await safe.getNonce();
+        expect(newNonce).to.equal(nonce + 1);
     });
 
     it("Should fail to verify a nonexistent contract", async function () {

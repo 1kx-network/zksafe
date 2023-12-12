@@ -30,11 +30,14 @@ fn cmp_gt<N>(a: [u8; N], b: [u8; N]) -> bool {
 fn verify_signers<T, N>(threshold: u8, signers: [PubKey; T], signatures: [Signature; T], txn_hash: Hash, owners: [Address; N]) {
     let mut curr_owner = [0; 20];
     let mut num_verified_signatures = 0;
+    // We use the generator point of the secp256k1 curve as the NIL value.
+    let g_x = [121, 190, 102, 126, 249, 220, 187, 172, 85, 160, 98, 149, 206, 135, 11, 7, 2, 155, 252, 219, 45, 206, 40, 217, 89, 242, 129, 91, 22, 248, 23, 152];
+    let g_y = [72, 58, 218, 119, 38, 163, 196, 101, 93, 164, 251, 252, 14, 17, 8, 168, 253, 23, 180, 72, 166, 133, 84, 25, 156, 71, 208, 143, 251, 16, 212, 184];
     for i in 0..T {
-        // Check only non-zero signatures.
-        if (signers[i].x != [0; 32]) & (signers[i].y != [0; 32]) {
+        // check only if the signature is not NIL
+        if (signers[i].x != g_x) & (signers[i].y != g_y) {
             // First, check that it verifies
-            assert(std::ecdsa_secp256k1::verify_signature(signers[i].x, signers[i].y, signatures[i], hash));
+            assert(std::ecdsa_secp256k1::verify_signature(signers[i].x, signers[i].y, signatures[i], txn_hash));
             // Then, find the address to which the verifying key corresponds.
             let mut uncompressed_pubkey = [0; 64];
             for j in 0..32 {
