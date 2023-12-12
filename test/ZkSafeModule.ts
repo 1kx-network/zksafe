@@ -169,17 +169,17 @@ describe("ZkSafeModule", function () {
             ethers.getBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"));
         const zero_address = new Array(20).fill(0);
 
-        const signatures = [sig1, sig2]; // sig3 is not included, threshold of 2 should be enough.
+        const signatures = [sig2, sig3]; // sig1 is not included, threshold of 2 should be enough.
         
         // Sort signatures by address - this is how the Safe contract does it.
         signatures.sort((sig1, sig2) => ethers.recoverAddress(txHash, sig1).localeCompare(ethers.recoverAddress(txHash, sig2)));
 
         const input = {
             threshold: await safe.getThreshold(),
-            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 3, nil_pubkey),
-            signatures: padArray(signatures.map(extractRSFromSignature), 3, nil_signature),
+            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 10, nil_pubkey),
+            signatures: padArray(signatures.map(extractRSFromSignature), 10, nil_signature),
             txn_hash: Array.from(ethers.getBytes(txHash)),
-            owners: padArray((await safe.getOwners()).map(addressToArray), 6, zero_address),
+            owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
         };
         correctProof = await noir.generateFinalProof(input);
         console.log("correctProof", correctProof);

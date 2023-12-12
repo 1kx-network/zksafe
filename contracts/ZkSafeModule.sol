@@ -65,7 +65,7 @@ contract ZkSafeModule {
     ) public view returns (bool) {
         // Construct the input to the circuit.
         // We need 33 + 6 * 20 = 153 bytes of public inputs.
-        bytes32[] memory publicInputs = new bytes32[](1 + 32 + 6 * 20);
+        bytes32[] memory publicInputs = new bytes32[](1 + 32 + 10 * 20);
 
         // Threshold
         uint threshold = safeContract.getThreshold();
@@ -81,7 +81,7 @@ contract ZkSafeModule {
 
         address[] memory owners = safeContract.getOwners();
         require(owners.length > 0, "No owners");
-        require(owners.length <= 6, "Too many owners");
+        require(owners.length <= 10, "Too many owners");
 
         // Each Address is unpacked into 20 separate bytes, each of which is given as a separate uint256 value.
         // TODO: this is super inefficient, fix by making the circuit take compressed inputs.
@@ -92,7 +92,7 @@ contract ZkSafeModule {
                 );
             }
         }
-        for (uint256 i = owners.length; i < 6; i++) {
+        for (uint256 i = owners.length; i < 10; i++) {
             for (uint256 j = 0; j < 20; j++) {
                 publicInputs[i * 20 + j + 33] = bytes32(0);
             }
@@ -148,7 +148,7 @@ contract ZkSafeModule {
         // must check this, as it can fail on an incompatible Safe contract version.
         require(safeContract.nonce() == nonce + 1, "Nonce not increased");
 
-        // All clean: can run the transaction.
+        // All clean: can run the    
         return safeContract.execTransactionFromModule(
             transaction.to,
             transaction.value,
