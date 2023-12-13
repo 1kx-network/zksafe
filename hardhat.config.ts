@@ -84,10 +84,17 @@ const config: HardhatUserConfig = {
             url:  "https://gnosis-pokt.nodies.app",
             accounts: getAccounts(),
         },
+        sepolia: {
+            url: "https://rpc.sepolia.org/",
+            accounts: getAccounts(),
+        },
         buildbear: {
             url:  "https://rpc.buildbear.io/1kx",
             accounts: getAccounts(),
         },
+    },
+    etherscan: {
+      apiKey: "BSM9B9YWPPU9SXIDYSRKJGN1VEE34QM4DE",
     },
     mocha: {
         timeout: 100000000

@@ -7,6 +7,7 @@ import circuit from '../circuits/target/circuits.json';
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
 import { Noir } from '@noir-lang/noir_js';
 import { ethers } from "ethers";
+import { vars } from "hardhat/config";
 
 import ZkSafeModule from "../ignition/modules/zkSafe";
 
@@ -49,7 +50,7 @@ function padArray(arr: any[], length: number, fill: any = 0) {
 
 export async function zksend(hre, safeAddr: string, to: string, value: string, data: string, proof: string) {
     // Sign transaction using safe-core-sdk.
-    const [_, mywallet] = await hre.ethers.getSigners();  // 2nd account is the SAFE_OWNER_PRIVATE_KEY
+    const mywallet = new hre.ethers.Wallet(vars.get("SAFE_OWNER_PRIVATE_KEY"), hre.ethers.provider);
     const mywalletAddress = mywallet.address;
     console.log("My wallet address: ", mywalletAddress);
 
@@ -106,7 +107,7 @@ export async function zksend(hre, safeAddr: string, to: string, value: string, d
 }
 
 export async function prove(hre, safeAddr: string, txHash: string, signatures_: string) {
-    const [_, mywallet] = await hre.ethers.getSigners();  
+    const mywallet = new hre.ethers.Wallet(vars.get("SAFE_OWNER_PRIVATE_KEY"), hre.ethers.provider);
     const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: mywallet });
     console.log("connecting to safe");
     const safe = await Safe.create({ ethAdapter, safeAddress: safeAddr });
@@ -128,8 +129,13 @@ export async function prove(hre, safeAddr: string, txHash: string, signatures_: 
     console.log("noir backend initialzied");
 
     console.log("proving ...");
-    const zero_pubkey = { x: new Array(32).fill(0), y: new Array(32).fill(0) };
-    const zero_signature = new Array(64).fill(0);
+    const nil_pubkey = {
+        x: Array.from(ethers.getBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")),
+        y: Array.from(ethers.getBytes("0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
+    };
+    // Our Nil signature is a signature with r and s set to the G point
+    const nil_signature = Array.from(
+        ethers.getBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"));
     const zero_address = new Array(20).fill(0);
     const signatures = signatures_.split(",");
 
@@ -137,10 +143,10 @@ export async function prove(hre, safeAddr: string, txHash: string, signatures_: 
     signatures.sort((sig1, sig2) => ethers.recoverAddress(txHash, sig1).localeCompare(ethers.recoverAddress(txHash, sig2)));
     const input = {
         threshold: await safe.getThreshold(),
-        signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 3, zero_pubkey),
-        signatures: padArray(signatures.map(extractRSFromSignature), 3, zero_signature),
-        hash: Array.from(ethers.getBytes(txHash)),
-        owners: padArray((await safe.getOwners()).map(addressToArray), 6, zero_address),
+        signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 10, nil_pubkey),
+        signatures: padArray(signatures.map(extractRSFromSignature), 10, nil_signature),
+        txn_hash: Array.from(ethers.getBytes(txHash)),
+        owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
     };
     const correctProof = await noir.generateFinalProof(input);
     console.log("Proof: ", ethers.hexlify(correctProof.proof));
@@ -148,7 +154,8 @@ export async function prove(hre, safeAddr: string, txHash: string, signatures_: 
 
 export async function sign(hre, safeAddr: string, to: string, value: string, data: string) {
     // Sign transaction using safe-core-sdk.
-    const [_, ywallet] = await hre.ethers.getSigners();
+    const mywallet = new hre.ethers.Wallet(vars.get("SAFE_OWNER_PRIVATE_KEY"), hre.ethers.provider);
+    console.log("mywallet: ", mywallet);
     console.log("initialized my wallet");
     const mywalletAddress = mywallet.address;
     console.log("My wallet address: ", mywalletAddress);
@@ -193,7 +200,7 @@ export async function sign(hre, safeAddr: string, to: string, value: string, dat
 }
 
 export async function createZkSafe(hre, owners: string[], threshold: number) {
-    const [mywallet] = await hre.ethers.getSigners();  // Corresponds to DEPLOYER_PRIVATE_KEY
+    const mywallet = new hre.ethers.Wallet(vars.get("DEPLOYER_PRIVATE_KEY"), hre.ethers.provider);
     console.log("initialized my wallet");
     const mywalletAddress = mywallet.address;
     console.log("My wallet address: ", mywalletAddress);
