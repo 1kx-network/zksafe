@@ -32,7 +32,8 @@ npx hardhat test --network localhost
 One can add the zkSafe module to any existing Safe thus enabling the option of zk singing.
 The addresses of the modules are:
 
-Sepolia:  0x6BCB4994265AF42e73533f2565DF85CdF30aafF9
+Sepolia: 0x6BCB4994265AF42e73533f2565DF85CdF30aafF9
+Gnosis Chain: 0xB7F27A6aFd3F9bCB8EBA9dCe8126e876B78CD443
 
 _TODO_ add other networks.
 

@@ -94,8 +94,24 @@ const config: HardhatUserConfig = {
         },
     },
     etherscan: {
-      apiKey: "BSM9B9YWPPU9SXIDYSRKJGN1VEE34QM4DE",
+        customChains: [
+        {
+            network: "gnosis",
+            chainId: 100,
+            urls: {
+              // 3) Select to what explorer verify the contracts
+              // Gnosisscan
+              apiURL: "https://api.gnosisscan.io/api",
+              browserURL: "https://gnosisscan.io/",
+            },
+          }
+        ],
+        apiKey: {
+            gnosis: vars.get("GNOSISSCAN_API_KEY", ""),
+            sepolia: vars.get("ETHERSCAN_API_KEY", ""),
+        },
     },
+
     mocha: {
         timeout: 100000000
     },
