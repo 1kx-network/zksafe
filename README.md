@@ -1,5 +1,7 @@
 # zkSafe is Safe module allowing owners signing Safe transactions without doxxing themselves
 
+WARNING: don't use it for production and/or large amounts yet. This is an Alpha version.
+
 When you use (Gnosis) Safe, signers of transactins leave the trace both onchain and in the Safe's REST API.  Anyone in the world is able to see exactly which addresses signed a given transaction.
 In many cases, this is not desirable.
 
@@ -87,6 +89,8 @@ npx hardhat --network <mainnet|sepolia|gnosis|etc>  prove --safe <safe address> 
 ```
 
 Proving might take a couple of minutes, and would return a large hex string starting with 0x.  This is the prove that needs to be sent to zkSafe along with the transaction.
+
+WARNING: Only up to 10 owners/signatures is supported at the moment. This limit will be increased (or completely removed) soon.
 
 
 ### Sending a proven transaction
