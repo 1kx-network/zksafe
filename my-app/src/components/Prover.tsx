@@ -5,7 +5,15 @@ import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import { Noir, ProofData } from "@noir-lang/noir_js";
 import circuit from "../../../circuits/target/circuits.json"; // Adjust the path as necessary
 import { BarretenbergBackend } from "@noir-lang/backend_barretenberg";
-import { Provider } from "ethers";
+import {
+  Box,
+  Button,
+  Input,
+  VStack,
+  useToast,
+  Heading,
+  Spinner,
+} from "@chakra-ui/react";
 
 function padArray(arr: any[], length: number, fill: any = 0) {
   return arr.concat(Array(length - arr.length).fill(fill));
@@ -57,22 +65,53 @@ const ProveTransactionComponent: React.FC = () => {
   const [txHash, setTxHash] = useState("");
   const [signatures_, setSignatures] = useState("");
   const [proof, setProof] = useState<ProofData>();
+  const toast = useToast();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (proof) {
+      toast({
+        title: "Proof generated",
+        description: `Proof: ${JSON.stringify(proof)}`,
+        status: "success",
+        duration: 9000,
+        isClosable: true,
+      });
       console.log("Proof:", proof);
     }
   }, [proof]);
 
   const prove = async () => {
+    setLoading(true);
     console.log("Proving transaction...");
+    toast({
+      title: "Proving transaction",
+      description: "Proving transaction...",
+      status: "info",
+      duration: 5000,
+      isClosable: true,
+    });
     //@ts-ignore
     const backend = new BarretenbergBackend(circuit);
     console.log("Backend initialized...");
+    toast({
+      title: "Backend initialized",
+      description: "Backend initialized...",
+      status: "info",
+      duration: 5000,
+      isClosable: true,
+    });
     //@ts-ignore
     const noir = new Noir(circuit, backend);
     await noir.init();
     console.log("Noir initialized...");
+    toast({
+      title: "Noir initialized",
+      description: "Noir initialized...",
+      status: "info",
+      duration: 5000,
+      isClosable: true,
+    });
 
     const nil_pubkey = {
       x: Array.from(
@@ -122,34 +161,62 @@ const ProveTransactionComponent: React.FC = () => {
     };
     console.log("Input:", input);
     console.log("Generating proof...");
+    toast({
+      title: "Generating proof",
+      description: "Generating proof...",
+      status: "info",
+      duration: 5000,
+      isClosable: true,
+    });
     const correctProof = await noir.generateFinalProof(input);
     setProof(correctProof);
     // Implement the logic to generate and log the proof as in the original prove function
-    console.log("Proof:", correctProof);
+    toast({
+      title: "Proof generated",
+      description: "Proof successfully generated",
+      status: "success",
+      duration: 5000,
+      isClosable: true,
+    });
+    setLoading(false);
   };
 
   return (
-    <div>
-      <input
-        type="text"
-        value={safeAddr}
-        onChange={(e) => setSafeAddr(e.target.value)}
-        placeholder="Safe Address"
-      />
-      <input
-        type="text"
-        value={txHash}
-        onChange={(e) => setTxHash(e.target.value)}
-        placeholder="Transaction Hash"
-      />
-      <input
-        type="text"
-        value={signatures_}
-        onChange={(e) => setSignatures(e.target.value)}
-        placeholder="Signatures (comma-separated)"
-      />
-      <button onClick={prove}>Prove Transaction</button>
-    </div>
+    <Box p={5}>
+      <VStack spacing={4} align="stretch">
+        <Heading size="lg">Proof Generation with Aztec Noir Example</Heading>
+        <Input
+          value={safeAddr}
+          onChange={(e) => setSafeAddr(e.target.value)}
+          placeholder="Safe Address"
+        />
+        <Input
+          value={txHash}
+          onChange={(e) => setTxHash(e.target.value)}
+          placeholder="Transaction Hash"
+        />
+        <Input
+          value={signatures_}
+          onChange={(e) => setSignatures(e.target.value)}
+          placeholder="Signatures (comma-separated)"
+        />
+        <Button colorScheme="blue" onClick={prove}>
+          Prove Transaction
+        </Button>
+      </VStack>
+      {loading && (
+        <Box mt={5}>
+          <Heading size="md">Loading...(this can take a few minutes)</Heading>
+          <Spinner />
+        </Box>
+      )}
+      {proof && ( // Display the proof if it exists
+        <Box mt={5}>
+          <Heading size="md">Proof</Heading>
+          <pre>{JSON.stringify(proof, null, 2)}</pre>
+        </Box>
+      )}
+    </Box>
   );
 };
 
