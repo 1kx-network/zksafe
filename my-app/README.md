@@ -2,6 +2,8 @@
 
 Follow these steps to create and sign a transaction. Please ensure you complete each step thoroughly before proceeding to the next one.
 
+0. Run `npm run install && npm run dev` 
+
 1. **Check out the main README**: Begin by reviewing the main README document for an overview and setup instructions.
 
 2. **Create and Sign a Transaction**: Use the following command to create and sign a transaction. Replace `<mainnet|sepolia|gnosis|etc>` with your network of choice, `<safe address>` with your safe address, `<to-address>` with the recipient's address, `<to-value-in-wei>` with the value of the transaction in wei, and `<calldata>` with the calldata of the transaction.
