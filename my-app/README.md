@@ -1,40 +1,15 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Getting Started
 
-## Getting Started
+Follow these steps to create and sign a transaction. Please ensure you complete each step thoroughly before proceeding to the next one.
 
-First, run the development server:
+1. **Check out the main README**: Begin by reviewing the main README document for an overview and setup instructions.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. **Create and Sign a Transaction**: Use the following command to create and sign a transaction. Replace `<mainnet|sepolia|gnosis|etc>` with your network of choice, `<safe address>` with your safe address, `<to-address>` with the recipient's address, `<to-value-in-wei>` with the value of the transaction in wei, and `<calldata>` with the calldata of the transaction.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+    ```shell
+    npx hardhat --network <mainnet|sepolia|gnosis|etc> sign --safe <safe address> --to <to-address> --value <to-value-in-wei> --data <calldata>
+    ```
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+3. **Input Transaction Details**: After creating and signing the transaction, copy the safe address, transaction hash (txHash), and signatures (comma-separated) into the corresponding input fields in the web interface.
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
-
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+4. **Prove the Transaction**: Click the "Prove Transaction" button. Please wait a few minutes for the process to complete. If no proof appears on the webpage, try pressing the button again and wait a few more minutes. Keep an eye on the browser's console logs for updates; the proof should eventually be displayed on the webpage.
