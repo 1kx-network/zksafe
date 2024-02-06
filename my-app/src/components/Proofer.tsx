@@ -12,6 +12,12 @@ import {
   useToast,
   Heading,
   Spinner,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  FormLabel,
 } from "@chakra-ui/react";
 
 function padArray(arr: any[], length: number, fill: any = 0) {
@@ -66,6 +72,8 @@ const ProofeTransactionComponent: React.FC = () => {
   const [proof, setProof] = useState<ProofData>();
   const toast = useToast();
   const [loading, setLoading] = useState(false);
+  const [threshold, setThreshold] = useState(1);
+  const [safeowners, setSafeOwners] = useState<string>("");
 
   useEffect(() => {
     if (proof) {
@@ -137,8 +145,9 @@ const ProofeTransactionComponent: React.FC = () => {
         .recoverAddress(txHash, sig1)
         .localeCompare(ethers.recoverAddress(txHash, sig2))
     );
+    const owners_ = safeowners.split(",");
     const input = {
-      threshold: 1, // Set the threshold as necessary
+      threshold: threshold, // Set the threshold as necessary
       signers: padArray(
         signatures.map((sig) =>
           extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))
@@ -152,11 +161,7 @@ const ProofeTransactionComponent: React.FC = () => {
         nil_signature
       ),
       txn_hash: Array.from(ethers.getBytes(txHash)),
-      owners: padArray(
-        ["0x15715a6dD4ee3Fe207ac99dd884DCCebFA746E85"].map(addressToArray),
-        10,
-        zero_address
-      ),
+      owners: padArray(owners_.map(addressToArray), 10, zero_address),
     };
     console.log("Input:", input);
     console.log("Generating proof...");
@@ -190,6 +195,28 @@ const ProofeTransactionComponent: React.FC = () => {
           placeholder="Safe Address"
         />
         <Input
+          value={safeAddr}
+          onChange={(e) => setSafeOwners(e.target.value)}
+          placeholder="Safe Owners (comma-separated)"
+        />
+        <FormLabel htmlFor="threshold">Safe Threshold (1-12)</FormLabel>
+        <NumberInput
+          defaultValue={1}
+          min={1}
+          max={12}
+          keepWithinRange={true}
+          clampValueOnBlur={false}
+        >
+          <NumberInputField
+            onChange={(e) => setThreshold(parseInt(e.target.value))}
+            placeholder="Threshold (1-12)"
+          />
+          <NumberInputStepper>
+            <NumberIncrementStepper />
+            <NumberDecrementStepper />
+          </NumberInputStepper>
+        </NumberInput>
+        <Input
           value={txHash}
           onChange={(e) => setTxHash(e.target.value)}
           placeholder="Transaction Hash"
@@ -199,6 +226,7 @@ const ProofeTransactionComponent: React.FC = () => {
           onChange={(e) => setSignatures(e.target.value)}
           placeholder="Signatures (comma-separated)"
         />
+
         <Button colorScheme="blue" onClick={prove}>
           Prove Transaction
         </Button>
