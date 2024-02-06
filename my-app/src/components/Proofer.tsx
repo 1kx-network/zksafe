@@ -139,13 +139,13 @@ const ProofeTransactionComponent: React.FC = () => {
       )
     );
     const zero_address = new Array(20).fill(0);
-    const signatures = signatures_.split(",");
+    const signatures = signatures_.split(",").map((sig) => sig.trim());
     signatures.sort((sig1, sig2) =>
       ethers
         .recoverAddress(txHash, sig1)
         .localeCompare(ethers.recoverAddress(txHash, sig2))
     );
-    const owners_ = safeowners.split(",");
+    const owners_ = safeowners.split(",").map((owner) => owner.trim());
     const input = {
       threshold: threshold, // Set the threshold as necessary
       signers: padArray(
