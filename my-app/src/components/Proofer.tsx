@@ -1,7 +1,6 @@
 // ProveTransactionComponent.tsx
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import { Noir, ProofData } from "@noir-lang/noir_js";
 import circuit from "../../../circuits/target/circuits.json"; // Adjust the path as necessary
 import { BarretenbergBackend } from "@noir-lang/backend_barretenberg";
@@ -60,7 +59,7 @@ function extractRSFromSignature(signatureHex: string): number[] {
   return Array.from(Buffer.from(signatureHex.slice(2, 130), "hex"));
 }
 
-const ProveTransactionComponent: React.FC = () => {
+const ProofeTransactionComponent: React.FC = () => {
   const [safeAddr, setSafeAddr] = useState("");
   const [txHash, setTxHash] = useState("");
   const [signatures_, setSignatures] = useState("");
@@ -220,4 +219,4 @@ const ProveTransactionComponent: React.FC = () => {
   );
 };
 
-export default ProveTransactionComponent;
+export default ProofeTransactionComponent;
