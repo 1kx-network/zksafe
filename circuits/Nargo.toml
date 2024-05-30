@@ -2,6 +2,6 @@
 name = "circuits"
 type = "bin"
 authors = ["Valeriy Zamaraiev"]
-compiler_version = "0.29.0"
+compiler_version = "0.22.0"
 
 [dependencies]

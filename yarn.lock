@@ -7,20 +7,20 @@
   resolved "https://registry.yarnpkg.com/@adraffy/ens-normalize/-/ens-normalize-1.10.0.tgz#d2a39395c587e092d77cbbc80acf956a54f38bf7"
   integrity sha512-nA9XHtlAkYfJxY7bce8DcN7eKxWWCWkU+1GR9d+U6MbNpfwQp8TI7vqOsBsMcHoT4mBu2kypKoSKnghEzOOq5Q==
 
-"@aztec/bb.js@0.38.0":
-  version "0.38.0"
-  resolved "https://registry.yarnpkg.com/@aztec/bb.js/-/bb.js-0.38.0.tgz#895eecc091ba64c54e3ae74e87daac532d1ed932"
-  integrity sha512-74MX3ieK0Oz3zUqbSfF1Bb25J38lGHkD4ajrOXfH1A97HMLCsOI5Rv40D5VUnv2JRnii3a9HU/ft26QafTsJQw==
+"@aztec/bb.js@0.16.0":
+  version "0.16.0"
+  resolved "https://registry.yarnpkg.com/@aztec/bb.js/-/bb.js-0.16.0.tgz#b99632ee378f4154111a865195ea88817f5e79d3"
+  integrity sha512-RWx0Oiml+bgOA+cqdh+/jynLIUOFHKFsPpk7L9gWz8Di0UZg9AoTSSOG+pR3il5EGWA4cJp5Wp3ikOSq62gC7g==
   dependencies:
     comlink "^4.4.1"
     commander "^10.0.1"
     debug "^4.3.4"
     tslib "^2.4.0"
 
-"@aztec/bb.js@^0.8.14":
-  version "0.8.14"
-  resolved "https://registry.yarnpkg.com/@aztec/bb.js/-/bb.js-0.8.14.tgz#74044169cfb8791955347f63e188e09498e8c1ef"
-  integrity sha512-VTduCfF048D3BKgwNwxvlID8uNMWcfV8YU4pf9KPeyvnwxexD69sjZdKg0UjyOHhd0jZTc1xvDThBxB9rcinTg==
+"@aztec/bb.js@0.23.0":
+  version "0.23.0"
+  resolved "https://registry.yarnpkg.com/@aztec/bb.js/-/bb.js-0.23.0.tgz#95a62d652a011473d5196564d77bc3a1a9bc9c4d"
+  integrity sha512-dEIfEY0wNK5TIiP6BOjByWqQ3aV1TkTpN0FwEfY/1DlDpkw5WyIfSblLUAiAHgIrEsBHddWFU1z3r17Cyh1CTQ==
   dependencies:
     comlink "^4.4.1"
     commander "^10.0.1"
@@ -557,48 +557,45 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@noir-lang/acvm_js@0.46.0":
-  version "0.46.0"
-  resolved "https://registry.yarnpkg.com/@noir-lang/acvm_js/-/acvm_js-0.46.0.tgz#e4f336bdbdfab0f99599fcf99b85e6e2b9c31a10"
-  integrity sha512-1iDEHumZJVzaxC+Fr9eB8x0iCDDiW+W6tZW9kkKwyUjKtAWoqxR6ea8/aVRw/JdQ3QjiERZt94iki9tK63YqmQ==
+"@noir-lang/acvm_js@0.38.0":
+  version "0.38.0"
+  resolved "https://registry.yarnpkg.com/@noir-lang/acvm_js/-/acvm_js-0.38.0.tgz#c51da3d42c969fffa19d567f187763ff165cb83e"
+  integrity sha512-bf5RcE7KmcjZ86j9Esm/KoHQhW3EEIv/qvKFy15jfgqPjTrXsUC7s9vif7/ZXpJKUMxu55zluNTTJtIGoNwy+A==
 
-"@noir-lang/backend_barretenberg@^0.30.0":
-  version "0.30.0"
-  resolved "https://registry.yarnpkg.com/@noir-lang/backend_barretenberg/-/backend_barretenberg-0.30.0.tgz#54b4a209ef47d9fb160ca75d5d3b2fc0d8195178"
-  integrity sha512-siQwExKNYEcX5NcndHU1DWhXyGZLJdoIJ++/LFWFJEiVqtvM5lgGzhJPQWwPsqJtwX+3/5uS4I7ZYq3hJ6aqOA==
+"@noir-lang/backend_barretenberg@^0.22.0":
+  version "0.22.0"
+  resolved "https://registry.yarnpkg.com/@noir-lang/backend_barretenberg/-/backend_barretenberg-0.22.0.tgz#3eda26b4275dfd73ec7c47af984860efff600eb8"
+  integrity sha512-jS8AEajl+h3Bfa2JS2yANb4/i31LKqDOGvr4eE/86ffM5dt+GXbDmWPRfaEoACUQkDZ7RpNbCBRtujqLNU5RtQ==
   dependencies:
-    "@aztec/bb.js" "0.38.0"
-    "@noir-lang/types" "0.30.0"
+    "@aztec/bb.js" "0.16.0"
+    "@noir-lang/types" "0.22.0"
     fflate "^0.8.0"
 
-"@noir-lang/noir_js@^0.30.0":
-  version "0.30.0"
-  resolved "https://registry.yarnpkg.com/@noir-lang/noir_js/-/noir_js-0.30.0.tgz#f8ccdfe85b53e3075f12fe64f921bcf1c0cb1f95"
-  integrity sha512-z+Xh/eikHRNB6ycbAiMZKRx/kPaJdDychTpsXZyxn0BRSvsqyaX10gVO5zCzpQ5vDPkOT04ZPP8sew6mJyhYuw==
+"@noir-lang/noir_js@^0.22.0":
+  version "0.22.0"
+  resolved "https://registry.yarnpkg.com/@noir-lang/noir_js/-/noir_js-0.22.0.tgz#ef7e7533d7042c321cd033cd9b1b97ddcccdad99"
+  integrity sha512-Wnh/015ehPCa2OgOo/URcrTzaeYI0Lmm+i5GKNYtZzoPWgsaHBoK0hDtEPkg7s5NSVwX5iVAcV4V5HUgxLBUpw==
   dependencies:
-    "@noir-lang/acvm_js" "0.46.0"
-    "@noir-lang/noirc_abi" "0.30.0"
-    "@noir-lang/types" "0.30.0"
+    "@noir-lang/acvm_js" "0.38.0"
+    "@noir-lang/noirc_abi" "0.22.0"
+    "@noir-lang/types" "0.22.0"
 
-"@noir-lang/noir_wasm@^0.30.0":
-  version "0.30.0"
-  resolved "https://registry.yarnpkg.com/@noir-lang/noir_wasm/-/noir_wasm-0.30.0.tgz#7d24330a3b5ed5e2c61debdd9a6eebcb001971fd"
-  integrity sha512-k0lXGEy1vsDZK/TTKZS6cQUW3lX/pyWPscREVd4khBFxUzQzfxQRJLCIUM+UDKELb4momfG1tDbJsN+j9rLyGg==
+"@noir-lang/noir_wasm@^0.22.0":
+  version "0.22.0"
+  resolved "https://registry.yarnpkg.com/@noir-lang/noir_wasm/-/noir_wasm-0.22.0.tgz#a5dff8b2674b7df252d3c75097e1a323297297a2"
+  integrity sha512-5x9XNdTqMGWnuqSa/C+YwvkSJHTigaJev8DLcpN1KfENwhboXG1nCN9A9fAKWelVwfSHjtuv+dR4TJo2x964xQ==
+
+"@noir-lang/noirc_abi@0.22.0":
+  version "0.22.0"
+  resolved "https://registry.yarnpkg.com/@noir-lang/noirc_abi/-/noirc_abi-0.22.0.tgz#f6dd2d8440d8026d50a8df89b1dcadbbd184fb5d"
+  integrity sha512-Rxt0qX6IexMeDiytDAg5z2AvlUe3MOOmeUCi9d1ovqF/Cj9ZUZc+LVOdkR5r11bgAMApURFXZo3idvz3v/MO0g==
+
+"@noir-lang/types@0.22.0", "@noir-lang/types@^0.22.0":
+  version "0.22.0"
+  resolved "https://registry.yarnpkg.com/@noir-lang/types/-/types-0.22.0.tgz#9566b105dd3ccf6a3c42e28cac12388d10c66a12"
+  integrity sha512-0xiQru499ZCK04Fs26eHpk5IP0f38VNKgIrVCnyjMKYQ0XTtVJQxUt/hqZV0cmqOEuCtfPcSYu2pzv1p50yNig==
   dependencies:
-    "@noir-lang/types" "0.30.0"
-    pako "^2.1.0"
-
-"@noir-lang/noirc_abi@0.30.0":
-  version "0.30.0"
-  resolved "https://registry.yarnpkg.com/@noir-lang/noirc_abi/-/noirc_abi-0.30.0.tgz#557bd76da8c5e86dd524f77814a90017e1e5c1ce"
-  integrity sha512-1MmWgRmYAa3cvZQwNsJCJfXyPb1kKpbF8SzmjWqzBNPrYXxT2mD6zCakPEfJJAxABUvxNjWJDoU43wskQ+laQg==
-  dependencies:
-    "@noir-lang/types" "0.30.0"
-
-"@noir-lang/types@0.30.0", "@noir-lang/types@^0.30.0":
-  version "0.30.0"
-  resolved "https://registry.yarnpkg.com/@noir-lang/types/-/types-0.30.0.tgz#0487c850140b8708e363bc65e26e726d6aaabc99"
-  integrity sha512-jjMI1VX46SGJ9cXnaBSXY7HHUOATgsCeYdxwCj5uFnIPLnaUtiwuvZV0xUsaFYfW7dUPK7P+mpHmfEy2W1acJg==
+    "@noir-lang/noirc_abi" "0.22.0"
 
 "@nomicfoundation/ethereumjs-block@5.0.2":
   version "5.0.2"
@@ -4319,11 +4316,6 @@ p-try@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/p-try/-/p-try-1.0.0.tgz#cbc79cdbaf8fd4228e13f621f2b1a237c1b207b3"
   integrity sha512-U1etNYuMJoIz3ZXSrrySFjsXQTWOx2/jdi86L+2pRvph/qMKL6sbcCYdH23fqsbm8TH2Gn0OybpT4eSFlCVHww==
-
-pako@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/pako/-/pako-2.1.0.tgz#266cc37f98c7d883545d11335c00fbd4062c9a86"
-  integrity sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug==
 
 parse-cache-control@^1.0.1:
   version "1.0.1"
