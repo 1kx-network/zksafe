@@ -114,7 +114,7 @@ contract ZkSafeModule {
         Transaction calldata transaction,
         // The proof blob.
         bytes calldata proof
-    ) public payable virtual returns (bool) {
+    ) public virtual returns (bool) {
         uint256 nonce = safeContract.nonce();
         bytes32 txHash = keccak256(
             safeContract.encodeTransactionData(
