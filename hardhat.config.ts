@@ -112,9 +112,17 @@ const config: HardhatUserConfig = {
         apiKey: {
             gnosis: vars.get("GNOSISSCAN_API_KEY", ""),
             sepolia: vars.get("ETHERSCAN_API_KEY", ""),
+            mainnet: vars.get("ETHERSCAN_API_KEY", ""),
         },
     },
-
+    ignition: {
+        strategyConfig: {
+            create2: {
+                // salt: "0x0Ccb2b6675A60EC6a5c20Fb0631Be8EAF3Ba2dCD" + "00" + "69eb570cb274b0ebea0271",
+                salt: "0x0000000000000000000000000000000000000000000000000000000000000000",
+            }
+        }
+    },
     mocha: {
         timeout: 100000000
     },
