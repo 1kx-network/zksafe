@@ -84,7 +84,11 @@ const config: HardhatUserConfig = {
             url: "http://127.0.0.1:8545",
         },
         gnosis: {
-            url:  "https://gnosis-pokt.nodies.app",
+            url: "https://gnosis-pokt.nodies.app",
+            accounts: getAccounts(),
+        },
+        bsc: {
+            url: "https://bsc-dataseed.binance.org/",
             accounts: getAccounts(),
         },
         sepolia: {
@@ -98,7 +102,7 @@ const config: HardhatUserConfig = {
     },
     etherscan: {
         customChains: [
-        {
+         {
             network: "gnosis",
             chainId: 100,
             urls: {
@@ -107,12 +111,23 @@ const config: HardhatUserConfig = {
               apiURL: "https://api.gnosisscan.io/api",
               browserURL: "https://gnosisscan.io/",
             },
+          },
+          {
+            network: "bsc",
+            chainId: 56,
+            urls: {
+              // 3) Select to what explorer verify the contracts
+              // Gnosisscan
+              apiURL: "https://api.bscscan.com/api",
+              browserURL: "https://bscscan.com/",
+            },
           }
         ],
         apiKey: {
             gnosis: vars.get("GNOSISSCAN_API_KEY", ""),
             sepolia: vars.get("ETHERSCAN_API_KEY", ""),
             mainnet: vars.get("ETHERSCAN_API_KEY", ""),
+            bsc: vars.get("BSCSCAN_API_KEY", ""),
         },
     },
     ignition: {
