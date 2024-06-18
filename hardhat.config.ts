@@ -84,16 +84,24 @@ const config: HardhatUserConfig = {
             url: "http://127.0.0.1:8545",
         },
         gnosis: {
-            url: "https://gnosis-pokt.nodies.app",
+            url: "https://gnosis.drpc.org",
             accounts: getAccounts(),
         },
         bsc: {
             url: "https://bsc-dataseed.binance.org/",
             accounts: getAccounts(),
         },
+        polygon: {
+            url: vars.get("POLYGON_RPC", ""),
+            accounts: getAccounts(),
+        },
         sepolia: {
             url: "https://rpc.sepolia.org/",
             accounts: getAccounts(),
+        },
+        telos: {
+             url: "https://mainnet-asia.telos.net/evm",
+             accounts: getAccounts(),
         },
         buildbear: {
             url:  "https://rpc.buildbear.io/1kx",
@@ -116,10 +124,16 @@ const config: HardhatUserConfig = {
             network: "bsc",
             chainId: 56,
             urls: {
-              // 3) Select to what explorer verify the contracts
-              // Gnosisscan
               apiURL: "https://api.bscscan.com/api",
               browserURL: "https://bscscan.com/",
+            },
+          },
+          {
+            network: "polygon",
+            chainId: 137,
+            urls: {
+              apiURL: "https://api.polygonscan.com/api",
+              browserURL: "https://polygonscan.com/",
             },
           }
         ],
@@ -128,13 +142,14 @@ const config: HardhatUserConfig = {
             sepolia: vars.get("ETHERSCAN_API_KEY", ""),
             mainnet: vars.get("ETHERSCAN_API_KEY", ""),
             bsc: vars.get("BSCSCAN_API_KEY", ""),
+            polygon: vars.get("POLYGONSCAN_API_KEY", ""),
         },
     },
     ignition: {
         strategyConfig: {
             create2: {
                 // salt: "0x0Ccb2b6675A60EC6a5c20Fb0631Be8EAF3Ba2dCD" + "00" + "69eb570cb274b0ebea0271",
-                salt: "0x0000000000000000000000000000000000000000000000000000000000000000",
+                salt: "0x00000000000000000000000000000000000000000069eb570cb274b0ebea0271",
             }
         }
     },
