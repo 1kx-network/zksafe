@@ -103,6 +103,14 @@ const config: HardhatUserConfig = {
              url: "https://mainnet-asia.telos.net/evm",
              accounts: getAccounts(),
         },
+        arbitrum: {
+            url: "https://1rpc.io/arb",
+            accounts: getAccounts(),
+        },
+        optimism: {
+            url: "https://1rpc.io/op",
+            accounts: getAccounts(),
+        },
         buildbear: {
             url:  "https://rpc.buildbear.io/1kx",
             accounts: getAccounts(),
@@ -143,6 +151,9 @@ const config: HardhatUserConfig = {
             mainnet: vars.get("ETHERSCAN_API_KEY", ""),
             bsc: vars.get("BSCSCAN_API_KEY", ""),
             polygon: vars.get("POLYGONSCAN_API_KEY", ""),
+            arbitrumOne: vars.get("ARBISCAN_API_KEY", ""),
+            mainnet: vars.get("ETHERSCAN_API_KEY", ""),
+            optimisticEthereum: vars.get("OPTIMISTIC_API_KEY", ""),
         },
     },
     ignition: {
