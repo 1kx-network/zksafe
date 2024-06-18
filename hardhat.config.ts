@@ -115,6 +115,14 @@ const config: HardhatUserConfig = {
             url:  "https://rpc.buildbear.io/1kx",
             accounts: getAccounts(),
         },
+        base: {
+            url: "https://base.rpc.subquery.network/public",
+            accounts: getAccounts(),
+        },
+        scroll: {
+            url: "https://scroll.drpc.org",
+            accounts: getAccounts(),
+        }
     },
     etherscan: {
         customChains: [
@@ -143,6 +151,14 @@ const config: HardhatUserConfig = {
               apiURL: "https://api.polygonscan.com/api",
               browserURL: "https://polygonscan.com/",
             },
+          },
+          {
+            network: "scroll",
+            chainId: 534352,
+            urls: {
+              apiURL: "https://api.scrollscan.com/api",
+              browserURL: "https://scrollscan.com/",
+            },
           }
         ],
         apiKey: {
@@ -154,6 +170,7 @@ const config: HardhatUserConfig = {
             arbitrumOne: vars.get("ARBISCAN_API_KEY", ""),
             mainnet: vars.get("ETHERSCAN_API_KEY", ""),
             optimisticEthereum: vars.get("OPTIMISTIC_API_KEY", ""),
+            scroll: vars.get("SCROLLSCAN_API_KEY", ""),
         },
     },
     ignition: {
