@@ -1,4 +1,5 @@
 import { HardhatUserConfig } from "hardhat/types";
+import "@matterlabs/hardhat-zksync";
 import "hardhat-deploy";
 import "@nomicfoundation/hardhat-ethers";
 import "@nomicfoundation/hardhat-ignition";
@@ -67,6 +68,10 @@ const config: HardhatUserConfig = {
             optimizer: {  enabled: true, runs: 200 }
         }
     },
+    zksolc: {
+        version: "latest", // Uses latest available in https://github.com/matter-labs/zksolc-bin
+        settings: {},
+    },
     namedAccounts: {
         deployer: {
             default: 0,
@@ -122,6 +127,11 @@ const config: HardhatUserConfig = {
         scroll: {
             url: "https://scroll.drpc.org",
             accounts: getAccounts(),
+        },
+        zksync: {
+          url: "https://mainnet.era.zksync.io",
+          accounts: getAccounts(),
+          zksync: true,
         }
     },
     etherscan: {
@@ -159,7 +169,7 @@ const config: HardhatUserConfig = {
               apiURL: "https://api.scrollscan.com/api",
               browserURL: "https://scrollscan.com/",
             },
-          }
+          },
         ],
         apiKey: {
             gnosis: vars.get("GNOSISSCAN_API_KEY", ""),
