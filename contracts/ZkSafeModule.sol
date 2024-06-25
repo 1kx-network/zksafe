@@ -149,11 +149,13 @@ contract ZkSafeModule {
         require(safeContract.nonce() == nonce + 1, "Nonce not increased");
 
         // All clean: can run the    
-        return safeContract.execTransactionFromModule(
+        bool result = safeContract.execTransactionFromModule(
             transaction.to,
             transaction.value,
             transaction.data,
-                transaction.operation
-            );
+            transaction.operation
+        );
+
+        require(result, "Execution of the transction from zkSafe module failed");
     }
 }
