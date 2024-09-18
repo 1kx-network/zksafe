@@ -118,6 +118,8 @@ const config: HardhatUserConfig = {
         base: {
             url: "https://base.rpc.subquery.network/public",
             accounts: getAccounts(),
+            initialBaseFeePerGas: 5000000000, // 5 gwei
+            gasPrice: 25000000000, // 25 gwei (base fee + priority fee)
         },
         scroll: {
             url: "https://scroll.drpc.org",
@@ -171,13 +173,14 @@ const config: HardhatUserConfig = {
             mainnet: vars.get("ETHERSCAN_API_KEY", ""),
             optimisticEthereum: vars.get("OPTIMISTIC_API_KEY", ""),
             scroll: vars.get("SCROLLSCAN_API_KEY", ""),
+            base: vars.get("BASESCAN_API_KEY", ""),
         },
     },
     ignition: {
         strategyConfig: {
             create2: {
                 // salt: "0x0Ccb2b6675A60EC6a5c20Fb0631Be8EAF3Ba2dCD" + "00" + "69eb570cb274b0ebea0271",
-                salt: "0x00000000000000000000000000000000000000000069eb570cb274b0ebea0271",
+                salt: "0x00000000000000000000000000000000000000000069eb570cb274b0ebea0275",
             }
         }
     },
