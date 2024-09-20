@@ -22,11 +22,20 @@ Once a Safe owner has signed a particular transaction, they can send a URL conta
 
 The party who eventually sees all the sigatures, can click "Generate Proof" and a proof will generated. This proof certifies that the signatures are correctly collected as required by Safe. This proof can then later be used to execute a transaction. Anyone address can execute it, even if that address is not the owner of the Safe. This gives opportunity to delegate the final execution to services like Gelato.
 
+### Demo: enabling zkSafe module on an existing Safe
 
-TODO: insert video here.
 
+https://github.com/user-attachments/assets/1067c504-6b85-4016-8848-61b978ae5101
+
+### Demo: sending a transaction in Zero Knowledge
+
+https://github.com/user-attachments/assets/e76f82f8-3c33-4b3b-bb4a-a6d0e1902efc
 
 Because the backendless UI is also stateless, it can only perform basic functions of Safe: sending transactions. It has a Transaction Builder and a Wallet Connect option for dapps.
+
+### Discussion of Backendless UI
+
+https://github.com/user-attachments/assets/f0e38bd0-27ba-4818-96c8-290c96214b8d
 
 ## Command line usage
 
