@@ -1,6 +1,6 @@
-# zkSafe is Safe module allowing owners signing Safe transactions without doxxing themselves
+# zkSafe: a Safe module for privacy of Safe transaction signing
 
-When you use (Gnosis) Safe, signers of transactins leave the trace both onchain and in the Safe's REST API.  Anyone in the world is able to see exactly which addresses signed a given transaction.
+When you use (Gnosis) Safe, signers of transactions leave the trace both onchain and in the Safe's REST API.  Anyone in the world is able to see exactly which addresses signed a given transaction.
 In many cases, this is not desirable.
 
 zkSafe allows Safe owners to collectively sign transactions, without revealing who exactly  signed it.  The zkSafe module only ensures that there's a proof of:
@@ -12,18 +12,25 @@ Once the module sees such a proof accompanying a Safe transaction, the module ca
 
 Currently, zkSafe doesn't hide the owners themselves. The whole world can still see who the Safe owners are. Only the signers of specific transactions are hidden.  In the future zkSafe will also hide the list of owners.
 
+# Usage
 
-## Testing
+## Backendless UI
 
-```
-yarn install
-npx hardhat node
-npx hardhat deploy --network localhost
-npx hardhat test --network localhost
-```
+The best way to use zkSafe is via the 1kx backendless UI at http://zksafe.1kx.io. The alternative UI implementation doesn't use any messaging. Therefore, coordination of signature collection is done by signers themselves via any messaging mechanism they prefer, such as [Signal](https://signal.org/).
+
+Once a Safe owner has signed a particular transaction, they can send a URL containing this transaction to other owners. Those, in turn, after signing the transaction with their signatures, can send URLs back to the original signer, or to some other individual who will end up seeing all the necessary signatures.
+
+The party who eventually sees all the sigatures, can click "Generate Proof" and a proof will generated. This proof certifies that the signatures are correctly collected as required by Safe. This proof can then later be used to execute a transaction. Anyone address can execute it, even if that address is not the owner of the Safe. This gives opportunity to delegate the final execution to services like Gelato.
 
 
-## Usage
+TODO: insert video here.
+
+
+Because the backendless UI is also stateless, it can only perform basic functions of Safe: sending transactions. It has a Transaction Builder and a Wallet Connect option for dapps.
+
+## Command line usage
+
+A set of Hardhat tasks are implemented for most common tasks, in case you don't want to use the UI or want to automate the usage of zkSafe.
 
 ### Creating a zkSafe
 
