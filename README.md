@@ -12,6 +12,21 @@ Once the module sees such a proof accompanying a Safe transaction, the module ca
 
 Currently, zkSafe doesn't hide the owners themselves. The whole world can still see who the Safe owners are. Only the signers of specific transactions are hidden.  In the future zkSafe will also hide the list of owners.
 
+# Available Networks
+
+zkSafe module is deployed at the following networks:
+    * Ethereum
+    * Base
+    * BSC
+    * Polygon
+    * Gnosis
+    * Arbitrum One
+    * Optimism Mainnet
+    * Scroll
+    * Sepolia
+
+Other networks could be added, please contact us or deploy yourself and send PRs.
+
 # Usage
 
 ## Backendless UI
