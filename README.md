@@ -1,6 +1,6 @@
 # zkSafe: a Safe module for privacy of Safe transaction signing
 
-When you use (Gnosis) Safe, signers of transactions leave the trace both onchain and in the Safe's REST API.  Anyone in the world is able to see exactly which addresses signed a given transaction.
+When you use [Safe](https://safe.global/), signers of transactions leave the trace both onchain and in the Safe's REST API. Anyone in the world is able to see exactly which addresses signed a given transaction.
 In many cases, this is not desirable.
 
 zkSafe allows Safe owners to collectively sign transactions, without revealing who exactly  signed it.  The zkSafe module only ensures that there's a proof of:
