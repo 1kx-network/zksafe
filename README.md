@@ -54,6 +54,8 @@ Because the backendless UI is also stateless, it can only perform basic function
 
 ### Discussion of Backendless UI
 
+The Backendless UI source code can be found at https://github.com/1kx-network/safe-ui-lite.
+
 https://github.com/user-attachments/assets/f0e38bd0-27ba-4818-96c8-290c96214b8d
 
 ## Command line usage
