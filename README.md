@@ -25,6 +25,8 @@ zkSafe module is deployed at the following networks:
 * Scroll
 * Sepolia
 
+The contract is deployed deterministically to the following address: 0xed1Ae0946bfB84253561fB1a05fEeD120A8cD2Eb
+
 Other networks could be added, please contact us or deploy yourself and send PRs.
 
 # Audits
@@ -71,10 +73,6 @@ npx hardhat compile
 ```
 
 One can add the zkSafe module to any existing Safe thus enabling the option of zk singing.
-zkSafe is deployed deterministically to the following address:
-
-0xed1Ae0946bfB84253561fB1a05fEeD120A8cD2Eb
-
 
 #### Manually adding zkSafe
 
