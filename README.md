@@ -15,17 +15,21 @@ Currently, zkSafe doesn't hide the owners themselves. The whole world can still 
 # Available Networks
 
 zkSafe module is deployed at the following networks:
-    * Ethereum
-    * Base
-    * BSC
-    * Polygon
-    * Gnosis
-    * Arbitrum One
-    * Optimism Mainnet
-    * Scroll
-    * Sepolia
+* Ethereum
+* Base
+* BSC
+* Polygon
+* Gnosis
+* Arbitrum One
+* Optimism Mainnet
+* Scroll
+* Sepolia
 
 Other networks could be added, please contact us or deploy yourself and send PRs.
+
+# Audits
+
+Audit by Halborn: https://www.halborn.com/audits/1kx/zk-sync-matter-labs-zk-safe-sca
 
 # Usage
 
