@@ -202,7 +202,7 @@ describe("ZkSafeModule", function () {
             addressProof.siblings = addressProof.siblings.map((s) => s[0])
             await ownersIndicesProof.push(Number("0b" + await addressProof.pathIndices.join("")))
             await ownersPathsProof.push(addressProof.siblings)
-          }
+        }
 
         const input = {
             threshold: toBeHex(threshold),

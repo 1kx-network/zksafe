@@ -1,15 +1,17 @@
 import Safe from '@safe-global/protocol-kit';
 import { EthersAdapter, SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit';
-import { SafeTransactionData } from '@safe-global/safe-core-sdk-types';
+import { SafeTransactionData, TransactionOptions } from '@safe-global/safe-core-sdk-types';
 
 
 import circuit from '../circuits/target/circuits.json';
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
 import { Noir } from '@noir-lang/noir_js';
-import { ethers } from "ethers";
+import { ethers, toBeHex } from "ethers";
 import { vars } from "hardhat/config";
 
 import ZkSafeModule from "../ignition/modules/zkSafe";
+import { IMT } from '@zk-kit/imt';
+import { poseidon } from '@iden3/js-crypto';
 
 /// Extract x and y coordinates from a serialized ECDSA public key.
 function extractCoordinates(serializedPubKey: string): { x: number[], y: number[] } {
@@ -59,13 +61,9 @@ export async function zksend(hre, safeAddr: string, to: string, value: string, d
     console.log("connecting to safe");
     const safe = await Safe.create({ ethAdapter, safeAddress: safeAddr });
     const version = await safe.getContractVersion();
-    const threshold = await safe.getThreshold();
-    const owners = await safe.getOwners();
     const safeAddress = await safe.getAddress();
     console.log("connected to safe ", safeAddress);
     console.log("  version: ", version);
-    console.log("  owners: ", owners);
-    console.log("  threshold: ", threshold);
     console.log("  nonce: ", await safe.getNonce());
     console.log("  chainId: ", await safe.getChainId());
     console.log("  balance: ", ethers.formatEther(await safe.getBalance()));
@@ -106,26 +104,42 @@ export async function zksend(hre, safeAddr: string, to: string, value: string, d
     console.log("Transaction result: ", await result);
 }
 
-export async function prove(hre, safeAddr: string, txHash: string, signatures_: string) {
+export async function prove(hre, safeAddr: string, txHash: string, signatures_: string, zkSafeModulePrivateOwners: string[], ownersAddressesFormat: number) {
     const mywallet = new hre.ethers.Wallet(vars.get("SAFE_OWNER_PRIVATE_KEY"), hre.ethers.provider);
     const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: mywallet });
     console.log("connecting to safe");
     const safe = await Safe.create({ ethAdapter, safeAddress: safeAddr });
     const version = await safe.getContractVersion();
-    const threshold = await safe.getThreshold();
-    const owners = await safe.getOwners();
     const address = await safe.getAddress();
     console.log("connected to safe ", address);
     console.log("  version: ", version);
-    console.log("  owners: ", owners);
-    console.log("  threshold: ", threshold);
     console.log("  nonce: ", await safe.getNonce());
     console.log("  chainId: ", await safe.getChainId());
     console.log("  balance: ", ethers.formatEther(await safe.getBalance()));
 
+    const modules = await safe.getModules();
+    let zkSafeModule = null;
+    for (let i = 0; i < modules.length; i++) {
+        const address = ethers.getAddress(modules[i]);
+        console.log("Checking module: ", address);
+        const ZkSafeModule = await hre.ethers.getContractFactory("ZkSafeModule");
+        const module = await ZkSafeModule.attach(address);
+        try {
+            const version = await module.zkSafeModuleVersion();
+            console.log("ZkSafe version: ", version);
+            zkSafeModule = module;
+            break;
+        } catch (e) {
+            console.log("Not a ZkSafe module", e);
+        }
+    }
+    if (!zkSafeModule) {
+        throw new Error("ZkSafeModule not found on Safe `${safeAddress}`");
+    }
+    
+    // New Noir Way
     const backend = new BarretenbergBackend(circuit);
-    const noir = new Noir(circuit, backend);
-    await noir.init();
+    const noir = new Noir(circuit);
     console.log("noir backend initialzied");
 
     console.log("proving ...");
@@ -141,15 +155,44 @@ export async function prove(hre, safeAddr: string, txHash: string, signatures_: 
 
     // Sort signatures by address - this is how the Safe contract does it.
     signatures.sort((sig1, sig2) => ethers.recoverAddress(txHash, sig1).localeCompare(ethers.recoverAddress(txHash, sig2)));
+    
+    const modulePrivateOwnersTree = new IMT(poseidon.hash, 3, 0, 2)
+    for (var privateOwner of zkSafeModulePrivateOwners) {
+        /*0: Normal address
+          1: Poseidon Hash address*/
+        if(ownersAddressesFormat == 0)
+            modulePrivateOwnersTree.insert(poseidon.hash([BigInt(privateOwner)]))
+        else if (ownersAddressesFormat == 1) 
+            modulePrivateOwnersTree.insert(BigInt(privateOwner))
+        else
+            throw new Error("Invalid owner addresses format variable value (0: Normal address) or (1: Poseidon Hash address)");
+    }
+    const ownersIndicesProof: number[] = []
+    const ownersPathsProof: any[][] = []
+    for (var signature of signatures) {
+        const recoveredAddress = ethers.recoverAddress(txHash,signature)
+        const index= await modulePrivateOwnersTree.indexOf(poseidon.hash([BigInt(recoveredAddress)]));
+        const addressProof= await modulePrivateOwnersTree.createProof(index);
+        addressProof.siblings = addressProof.siblings.map((s) => s[0])
+        await ownersIndicesProof.push(Number("0b" + await addressProof.pathIndices.join("")))
+        await ownersPathsProof.push(addressProof.siblings)
+    }
+
     const input = {
-        threshold: await safe.getThreshold(),
-        signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 10, nil_pubkey),
-        signatures: padArray(signatures.map(extractRSFromSignature), 10, nil_signature),
+        threshold:   toBeHex((await zkSafeModule.safeToConfig(safeAddr)).threshold),
+        signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 4, nil_pubkey),
+        signatures: padArray(signatures.map(extractRSFromSignature), 4, nil_signature),
         txn_hash: Array.from(ethers.getBytes(txHash)),
-        owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
+        owners_root:  (await zkSafeModule.safeToConfig(safeAddr)).ownersRoot,
+        indices: padArray(ownersIndicesProof.map(indice => toBeHex(indice)), 4, "0x0"),
+        siblings: padArray(ownersPathsProof.map(paths => paths.map(path => toBeHex(path))), 4, ["0x0", "0x0", "0x0"])
     };
-    const correctProof = await noir.generateFinalProof(input);
-    console.log("Proof: ", ethers.hexlify(correctProof.proof));
+
+    console.log('logs', 'Generating witness... ⌛');
+    const { witness, returnValue } = await noir.execute(input);
+    console.log('logs', 'Generating proof... ✅');
+    const correctProof = await backend.generateProof(witness);
+    console.log("proof", ethers.hexlify(correctProof.proof));
 }
 
 export async function sign(hre, safeAddr: string, to: string, value: string, data: string) {
@@ -165,13 +208,9 @@ export async function sign(hre, safeAddr: string, to: string, value: string, dat
     console.log("connecting to safe");
     const safe = await Safe.create({ ethAdapter, safeAddress: safeAddr });
     const version = await safe.getContractVersion();
-    const threshold = await safe.getThreshold();
-    const owners = await safe.getOwners();
     const address = await safe.getAddress();
     console.log("connected to safe ", address);
     console.log("  version: ", version);
-    console.log("  owners: ", owners);
-    console.log("  threshold: ", threshold);
     console.log("  nonce: ", await safe.getNonce());
     console.log("  chainId: ", await safe.getChainId());
     console.log("  balance: ", ethers.formatEther(await safe.getBalance()));
@@ -199,7 +238,7 @@ export async function sign(hre, safeAddr: string, to: string, value: string, dat
     console.log("Signature: ", safeSig.data);
 }
 
-export async function createZkSafe(hre, owners: string[], threshold: number) {
+export async function createZkSafe(hre, owners: string[], threshold: number, zkSafeModulePrivateOwners: string[], zkSafeModuleThreshold: number) {
     const mywallet = new hre.ethers.Wallet(vars.get("DEPLOYER_PRIVATE_KEY"), hre.ethers.provider);
     console.log("initialized my wallet");
     const mywalletAddress = mywallet.address;
@@ -218,11 +257,20 @@ export async function createZkSafe(hre, owners: string[], threshold: number) {
     const zkSafeModuleAddress = await zkSafeModule.getAddress();
     console.log("zkSafeModule: ", zkSafeModuleAddress);
 
+    const modulePrivateOwnersTree = new IMT(poseidon.hash, 3, 0, 2)
+    for (var privateOwner of zkSafeModulePrivateOwners) {
+        modulePrivateOwnersTree.insert(poseidon.hash([BigInt(privateOwner)]))
+    }
     safeAccountConfig.to = zkSafeModuleAddress;
-    const iface = new ethers.Interface(["function enableModule(address module)"]);
-    safeAccountConfig.data = iface.encodeFunctionData("enableModule", [zkSafeModuleAddress]);
+    const iface = new ethers.Interface(["function enableModule(bytes32 ownersRoot, uint256 threshold)"]);
+    safeAccountConfig.data = iface.encodeFunctionData("enableModule", [toBeHex(modulePrivateOwnersTree.root), zkSafeModuleThreshold]);
 
-    const safe = await safeFactory.deploySafe({ safeAccountConfig });
+    /*const options: TransactionOptions = {
+        maxFeePerGas: 80000000000,
+        maxPriorityFeePerGas: 40000000000
+    }*/
+    const safe = await safeFactory.deploySafe({ safeAccountConfig/*, options */});
     const safeAddress = await safe.getAddress();
     console.log("Created zkSafe at address: ", safeAddress);
+    console.log("Private owners addresses: ", modulePrivateOwnersTree.leaves);
 }
