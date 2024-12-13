@@ -3,6 +3,9 @@ import "hardhat-deploy";
 import "@nomicfoundation/hardhat-ethers";
 import "@nomicfoundation/hardhat-ignition";
 import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomicfoundation/hardhat-verify";
+import "@nomicfoundation/hardhat-ignition-ethers";
+
 
 import { BigNumber } from "@ethersproject/bignumber";
 import { DeterministicDeploymentInfo } from "hardhat-deploy/dist/types";
@@ -39,7 +42,9 @@ task("prove", "Prove a zksafe transaction")
     .addParam("safe", "Address of the Safe")
     .addParam("txhash", "Transaction hash")
     .addParam("signatures", "Signatures (comma separated)")
-    .setAction(async (taskArgs, hre) => prove(hre, taskArgs.safe, taskArgs.txhash, taskArgs.signatures));
+    .addParam("zksafemoduleprivateowners", "Calldata to send")
+    .addParam("ownersaddressesformat", "The proof")
+    .setAction(async (taskArgs, hre) => prove(hre, taskArgs.safe, taskArgs.txhash, taskArgs.signatures, taskArgs.zksafemoduleprivateowners.split(","), taskArgs.ownersaddressesformat));
     
 task("sign", "Sign Safe transaction")
     .addParam("safe", "Address of the Safe")
@@ -51,7 +56,9 @@ task("sign", "Sign Safe transaction")
 task("createZkSafe", "Create a ZkSafe")
     .addParam("owners", "Comma separated list of owners")
     .addParam("threshold", "Threshold")
-    .setAction(async (taskArgs, hre) => createZkSafe(hre, taskArgs.owners.split(","), taskArgs.threshold));
+    .addParam("zksafemoduleprivateowners", "Comma separated list of private owners")
+    .addParam("zksafemodulethreshold", "Module threshold")
+    .setAction(async (taskArgs, hre) => createZkSafe(hre, taskArgs.owners.split(","), taskArgs.threshold, taskArgs.zksafemoduleprivateowners.split(","), taskArgs.zksafemodulethreshold));
 
 const getAccounts = function(): string[] {
     let accounts = [];

@@ -92,7 +92,7 @@ Sign this transaction with threshold number of owners and execute it it.
 Alternatively one can create a Safe with the zk module enabled using the following hardhat task `createZkSafe`, for example:
 
 ```
-$ npx hardhat createZkSafe --network <mainnet|gnosis|sepolia> --owners 0x0Ccb2b6675A60EC6a5c20Fb0631Be8EAF3Ba2dCD,0x48129F999598675F40A6d36Cec58a623b8c0228d,0x6804a7411adFAEB185d4dE27a04e5B6281160822 --threshold 2 
+$ npx hardhat createZkSafe --network <mainnet|gnosis|sepolia> --owners 0x0Ccb2b6675A60EC6a5c20Fb0631Be8EAF3Ba2dCD,0x48129F999598675F40A6d36Cec58a623b8c0228d,0x6804a7411adFAEB185d4dE27a04e5B6281160822 --threshold 2 --zksafemoduleprivateowners 0x1510B92f94e3f67Fb3d9a12501AF7Ce5B567063d,0x1E8A0CD8045C7C0C9762408AFF2c64C63F26C5f4,0x2Ef9Dbc8683d44d6e782823F2f637b22576fB7f1,0xbd8faF57134f9C5584da070cC0be7CA8b5A24953 --zksafemodulethreshold 2
 initialized my wallet
 My wallet address:  0x0Ccb2b6675A60EC6a5c20Fb0631Be8EAF3Ba2dCD
 zkSafeModule:  0xec2dE1dfa3C2e1435823732E7390eFcF1b1B05B1
@@ -122,7 +122,7 @@ The command will output the transaction hash, and the signature. These values ne
 Having collected all the signatures, we need to generate a proof. This is done with the `prove` hardhat task.
 
 ```
-npx hardhat --network <mainnet|sepolia|gnosis|etc>  prove --safe <safe address>  --signatures <signature1>,<signature2>,<sinagure3> --txhash <txhash>
+npx hardhat --network <mainnet|sepolia|gnosis|etc>  prove --safe <safe address>  --signatures <signature1>,<signature2>,<sinagure3> --txhash <txhash> --zksafemoduleprivateowners 0x1510B92f94e3f67Fb3d9a12501AF7Ce5B567063d,0x1E8A0CD8045C7C0C9762408AFF2c64C63F26C5f4,0x2Ef9Dbc8683d44d6e782823F2f637b22576fB7f1,0xbd8faF57134f9C5584da070cC0be7CA8b5A24953 --ownersaddressesformat 0
 ```
 
 Proving might take a couple of minutes, and would return a large hex string starting with 0x.  This is the prove that needs to be sent to zkSafe along with the transaction.

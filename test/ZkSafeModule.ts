@@ -8,9 +8,12 @@ import { Noir } from '@noir-lang/noir_js';
 import { EthersAdapter, SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit';
 import Safe from '@safe-global/protocol-kit';
 import { SafeTransactionData } from '@safe-global/safe-core-sdk-types';
+import { IMT } from '@zk-kit/imt';
+import { poseidon } from '@iden3/js-crypto';
+import { isBytesLike, isHexString, toBeHex, Typed } from 'ethers';
 
-async function getOwnerAdapters(): Promise<EthersAdapter[]> {
-    return (await ethers.getSigners()).slice(0, 3).map((signer) => new EthersAdapter({ ethers, signerOrProvider: signer }));
+async function getOwnerAdapters(fromIndex: number, toIndex: number): Promise<EthersAdapter[]> {
+    return (await ethers.getSigners()).slice(fromIndex, toIndex).map((signer) => new EthersAdapter({ ethers, signerOrProvider: signer }));
 }
 
 /// Extract x and y coordinates from a serialized ECDSA public key.
@@ -56,15 +59,20 @@ describe("ZkSafeModule", function () {
     let safe: Safe;
     let verifierContract: any;
 
+    let privateOwnerAdapters: EthersAdapter[];
+    let ownersMerkleTree:  IMT;
+    let threshold = 2;
+
     // New Noir Way
     let noir: Noir;
-    let correctProof: Uint8Array;
+    let backend: BarretenbergBackend;
+    let correctProof: any;
 
     before(async function () {
-        ownerAdapters = await getOwnerAdapters();
+        ownerAdapters = await getOwnerAdapters(0, 3);
         // Deploy Safe
         let owners = await Promise.all(ownerAdapters.map((oa) => (oa.getSigner()?.getAddress() as string)));
-        console.log("owners", owners);
+        console.log("Safe owners", owners);
 
         await deployments.fixture();
 
@@ -108,9 +116,22 @@ describe("ZkSafeModule", function () {
         const zkSafeModuleAddress = await zkSafeModule.getAddress();
         console.log("zkSafeModule: ", zkSafeModuleAddress);
 
+        privateOwnerAdapters = await getOwnerAdapters(3, 8);
+        // Deploy Safe
+        let privateOwners = await Promise.all(privateOwnerAdapters.map((oa) => (oa.getSigner()?.getAddress() as string)));
+        console.log("Safe private owners", privateOwners);
+        ownersMerkleTree = new IMT(poseidon.hash, 3, 0, 2)
+        ownersMerkleTree.insert(poseidon.hash([BigInt(privateOwners[0])]))
+        ownersMerkleTree.insert(poseidon.hash([BigInt(privateOwners[1])]))
+        ownersMerkleTree.insert(poseidon.hash([BigInt(privateOwners[2])]))
+        ownersMerkleTree.insert(poseidon.hash([BigInt(privateOwners[3])]))
+        ownersMerkleTree.insert(poseidon.hash([BigInt(privateOwners[4])]))    
+
         safeAccountConfig.to = zkSafeModuleAddress;
-        const iface = new ethers.Interface(["function enableModule(address module)"]);
-        safeAccountConfig.data = iface.encodeFunctionData("enableModule", [zkSafeModuleAddress]);
+
+        const iface = new ethers.Interface(["function enableModule(bytes32 ownersRoot, uint256 threshold)"]);
+        safeAccountConfig.data = iface.encodeFunctionData("enableModule", [toBeHex(ownersMerkleTree.root), threshold]);
+        //Typed.bytes32(toBeHex(merkleTree.root))
 
         safe = await safeFactory.deploySafe({ safeAccountConfig });
         const safeAddress = await safe.getAddress();
@@ -119,9 +140,8 @@ describe("ZkSafeModule", function () {
         // [api, acirComposer, acirBuffer, acirBufferUncompressed] = await initCircuits();
 
         // New Noir Way
-        const backend = new BarretenbergBackend(circuit);
-        noir = new Noir(circuit, backend);
-        await noir.init();
+        backend = new BarretenbergBackend(circuit);
+        noir = new Noir(circuit);
         console.log("noir backend initialzied");
     });
 
@@ -129,7 +149,6 @@ describe("ZkSafeModule", function () {
     it("Should succeed verification of a basic transaction", async function () {
 
         const nonce = await safe.getNonce();
-        const threshold = await safe.getThreshold();
         const safeTransactionData : SafeTransactionData = {
             to: ethers.ZeroAddress,
             value: "0x0",
@@ -156,9 +175,9 @@ describe("ZkSafeModule", function () {
             chainId: await ownerAdapters[0].getChainId(),
             safeTransactionData: safeTransactionData,
         }; 
-        const sig1 = await ownerAdapters[0].signTypedData(safeTypedData);
-        const sig2 = await ownerAdapters[1].signTypedData(safeTypedData);
-        const sig3 = await ownerAdapters[2].signTypedData(safeTypedData);
+        const sig1 = await privateOwnerAdapters[0].signTypedData(safeTypedData);
+        const sig2 = await privateOwnerAdapters[1].signTypedData(safeTypedData);
+        const sig3 = await privateOwnerAdapters[2].signTypedData(safeTypedData);
 
         const nil_pubkey = {
             x: Array.from(ethers.getBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")),
@@ -174,26 +193,44 @@ describe("ZkSafeModule", function () {
         // Sort signatures by address - this is how the Safe contract does it.
         signatures.sort((sig1, sig2) => ethers.recoverAddress(txHash, sig1).localeCompare(ethers.recoverAddress(txHash, sig2)));
 
-        const input = {
-            threshold: await safe.getThreshold(),
-            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 10, nil_pubkey),
-            signatures: padArray(signatures.map(extractRSFromSignature), 10, nil_signature),
-            txn_hash: Array.from(ethers.getBytes(txHash)),
-            owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
-        };
-        correctProof = await noir.generateFinalProof(input);
-        console.log("correctProof", correctProof);
+        const ownersIndicesProof: number[] = []
+        const ownersPathsProof: any[][] = []
+        for (var signature of signatures) {
+            const recoveredAddress = ethers.recoverAddress(txHash,signature)
+            const index= await ownersMerkleTree.indexOf(poseidon.hash([BigInt(recoveredAddress)]));
+            const addressProof= await ownersMerkleTree.createProof(index);
+            addressProof.siblings = addressProof.siblings.map((s) => s[0])
+            await ownersIndicesProof.push(Number("0b" + await addressProof.pathIndices.join("")))
+            await ownersPathsProof.push(addressProof.siblings)
+        }
 
-        const verification = await noir.verifyFinalProof(correctProof);
-        expect(verification).to.be.true;
+        const input = {
+            threshold: toBeHex(threshold),
+            signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 4, nil_pubkey),
+            signatures: padArray(signatures.map(extractRSFromSignature), 4, nil_signature),
+            txn_hash: Array.from(ethers.getBytes(txHash)),
+            owners_root: toBeHex(ownersMerkleTree.root),
+            indices: padArray(ownersIndicesProof.map(indice => toBeHex(indice)), 4, "0x0"),
+            siblings: padArray(ownersPathsProof.map(paths => paths.map(path => toBeHex(path))), 4, ["0x0", "0x0", "0x0"])
+        };
+        console.log('logs', 'Generating witness... ⌛');
+        //console.log('input: ', input);
+        const { witness, returnValue } = await noir.execute(input);
+        console.log('logs', 'Generating proof... ✅');
+        correctProof = await backend.generateProof(witness);
+        console.log("proof", correctProof);
+
+        const isValid = await backend.verifyProof(correctProof);
+        expect(isValid).to.be.true;
         console.log("verification in JS succeeded");
 
 
         const safeAddress = await safe.getAddress();
-        const directVerification = await verifierContract.verify(correctProof["proof"], [...correctProof["publicInputs"].values()]);
+        //const directVerification = await verifierContract.verify(correctProof["proof"], [...correctProof["publicInputs"].values()]);
+        const directVerification = await verifierContract.verify(correctProof.proof, [...correctProof.publicInputs]);
         console.log("directVerification", directVerification);
 
-        const contractVerification = await zkSafeModule.verifyZkSafeTransaction(safeAddress, txHash, correctProof["proof"]);
+        const contractVerification = await zkSafeModule.verifyZkSafeTransaction(safeAddress, txHash, correctProof.proof);
         console.log("contractVerification", contractVerification);
 
         console.log("safe: ", safe);
@@ -205,11 +242,12 @@ describe("ZkSafeModule", function () {
               data: transaction["data"]["data"],
               operation: transaction["data"]["operation"],
             },
-            correctProof["proof"],
+            correctProof.proof,
             { gasLimit: 2000000 }
         );
 
-        let receipt = txn.wait();
+        let receipt = await txn.wait();
+        console.log("receipt: ", receipt);
         expect(txn).to.not.be.reverted;
         let newNonce = await safe.getNonce();
         expect(newNonce).to.equal(nonce + 1);
@@ -253,3 +291,4 @@ describe("ZkSafeModule", function () {
     });
 
 });
+

@@ -12,9 +12,20 @@ import "hardhat/console.sol";
  */
 contract ZkSafeModule {
     UltraVerifier verifier;
+    address immutable zkSafeModuleAddress;
+
+    struct zkSafeConfig {
+        // Owner root
+        bytes32 ownersRoot;
+        // Threshhold
+        uint256 threshold;
+    }
+
+    mapping(GnosisSafe => zkSafeConfig) public safeToConfig;
 
     constructor(UltraVerifier _verifier) {
         verifier = _verifier;
+        zkSafeModuleAddress = address(this);
     }
 
     function zkSafeModuleVersion() public pure returns (string memory) {
@@ -31,14 +42,37 @@ contract ZkSafeModule {
 
     /*
      * @dev Enables a module on a Gnosis Safe contract.
+     * @param ownersRoot Owners Merkle tree root.
+     * @param threshold Number of required confirmations for a zkSafe transaction.
+    */
+    function enableModule(bytes32 ownersRoot, uint256 threshold) external {
+        address payable thisAddr = payable(address(this));
+        GnosisSafe(thisAddr).enableModule(zkSafeModuleAddress);
+        
+        // Initialize zkMultisg config
+        ZkSafeModule(zkSafeModuleAddress).updateZkMultisigConf(
+            ownersRoot, threshold
+        );
+    }
+
+     /*
+     * @dev Update the zk multisg config for the msg.sender, which should be a zkSafe that wants to implement this module
      * @param module The address of the module to enable.
      */
-    function enableModule(address module) external {
-        address payable thisAddr = payable(address(this));
-        GnosisSafe(thisAddr).enableModule(module);
+    function updateZkMultisigConf(bytes32 ownersRoot, uint256 threshold) external {
+        //require(threshold > 0, "Threshold must be greater than 0");
+        require(threshold < 256, "Threshold must be less than 256");
+
+        safeToConfig[GnosisSafe(payable(msg.sender))] = zkSafeConfig({
+            ownersRoot: ownersRoot,
+            threshold: threshold
+        });
     }
 
     function increaseNonce(uint256 nonce) public {
+        // only let call this via delegate call
+        require(address(this) != zkSafeModuleAddress);
+
         // Nonce should be at 0x05 slot, but better verify this assumption.
         assembly {
             // Load the current nonce.
@@ -59,44 +93,30 @@ contract ZkSafeModule {
      * @return True if the proof is valid, false otherwise.
      */
     function verifyZkSafeTransaction(
-        GnosisSafe safeContract,
+        address safeContract,
         bytes32 txHash,
         bytes calldata proof
     ) public view returns (bool) {
-        // Construct the input to the circuit.
-        // We need 33 + 6 * 20 = 153 bytes of public inputs.
-        bytes32[] memory publicInputs = new bytes32[](1 + 32 + 10 * 20);
 
-        // Threshold
-        uint threshold = safeContract.getThreshold();
-        require(threshold > 0, "Threshold must be greater than 0");
-        require(threshold < 256, "Threshold must be less than 256");
-        publicInputs[0] = bytes32(threshold);
+        zkSafeConfig memory currentSageConfig = safeToConfig[GnosisSafe(payable(safeContract))];
+        
+        // Construct the input to the circuit.
+        // We need 34 array position for public inputs.
+        bytes32[] memory publicInputs = new bytes32[](1 + 32 + 1);
+
+  
+        // Threshold       
+        publicInputs[0] = bytes32(uint256(currentSageConfig.threshold));
 
         // Each byte of the transaction hash is given as a separate uint256 value.
         // TODO: this is super inefficient, fix by making the circuit take compressed inputs.
         for (uint256 i = 0; i < 32; i++) {
-            publicInputs[i + 1] = bytes32(uint256(uint8(txHash[i])));
+            publicInputs[i+1] = bytes32(uint256(uint8(txHash[i])));
         }
 
-        address[] memory owners = safeContract.getOwners();
-        require(owners.length > 0, "No owners");
-        require(owners.length <= 10, "Too many owners");
+        // ownersRoot
+        publicInputs[33] = bytes32(currentSageConfig.ownersRoot);
 
-        // Each Address is unpacked into 20 separate bytes, each of which is given as a separate uint256 value.
-        // TODO: this is super inefficient, fix by making the circuit take compressed inputs.
-        for (uint256 i = 0; i < owners.length; i++) {
-            for (uint256 j = 0; j < 20; j++) {
-                publicInputs[i * 20 + j + 33] = bytes32(
-                    uint256(uint8(bytes20(owners[i])[j]))
-                );
-            }
-        }
-        for (uint256 i = owners.length; i < 10; i++) {
-            for (uint256 j = 0; j < 20; j++) {
-                publicInputs[i * 20 + j + 33] = bytes32(0);
-            }
-        }
         // Get the owners of the Safe by calling into the Safe contract.
         return verifier.verify(proof, publicInputs);
     }
@@ -133,7 +153,7 @@ contract ZkSafeModule {
                 nonce
             )
         );
-        require(verifyZkSafeTransaction(safeContract, txHash, proof), "Invalid proof");
+        require(verifyZkSafeTransaction(address(safeContract), txHash, proof), "Invalid proof");
         // All checks are successful, can execute the transaction.
 
         // Safe doesn't increase the nonce for module transactions, so we need to take care of that.
