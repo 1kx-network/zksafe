@@ -9,7 +9,7 @@ struct  PubKey {
 }
 
 /// Compare two arrays of bytes, return true if a > b.
-fn cmp_gt<N>(a: [u8; N], b: [u8; N]) -> bool {
+fn cmp_gt<let N: u32>(a: [u8; N], b: [u8; N]) -> bool {
     let mut result = false;
     let mut done = false;
     for i in 0..N {
@@ -27,7 +27,7 @@ fn cmp_gt<N>(a: [u8; N], b: [u8; N]) -> bool {
 }
 
 /// Verify if the signatures are valid and the signers are in the owners list.
-fn verify_signers<T, N>(threshold: u8, signers: [PubKey; T], signatures: [Signature; T], txn_hash: Hash, owners: [Address; N]) {
+fn verify_signers<let T: u32, let N: u32>(threshold: u8, signers: [PubKey; T], signatures: [Signature; T], txn_hash: Hash, owners: [Address; N]) {
     let mut curr_owner = [0; 20];
     let mut num_verified_signatures = 0;
     // We use the generator point of the secp256k1 curve as the NIL value.
