@@ -35,6 +35,7 @@
     "@noir-lang/types": "^0.19.4",
     "@safe-global/protocol-kit": "^6.0.4",
     "@safe-global/safe-deployments": "^1.28.0",
+    "@safe-global/safe-singleton-factory": "^1.0.43",
     "add": "^2.0.6",
     "@nomicfoundation/slang": "^1.0.0",
     "@openzeppelin/contracts": "^5.2.0",

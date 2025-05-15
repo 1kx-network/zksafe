@@ -1,10 +1,9 @@
 import { HardhatUserConfig } from "hardhat/types";
 import "hardhat-deploy";
-import "@nomicfoundation/hardhat-ethers";
+import "@nomicfoundation/hardhat-toolbox-viem";
 import "@nomicfoundation/hardhat-ignition";
-import "@nomicfoundation/hardhat-chai-matchers";
+// import "@nomicfoundation/hardhat-chai-matchers";
 
-import { BigNumber } from "@ethersproject/bignumber";
 import { DeterministicDeploymentInfo } from "hardhat-deploy/dist/types";
 import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
 
@@ -22,7 +21,7 @@ const deterministicDeployment = (network: string): DeterministicDeploymentInfo =
     return {
         factory: info.address,
         deployer: info.signerAddress,
-        funding: BigNumber.from(info.gasLimit).mul(BigNumber.from(info.gasPrice)).toString(),
+        funding: (BigInt(info.gasLimit) * BigInt(info.gasPrice)).toString(),
         signedTx: info.transaction,
     };
 };

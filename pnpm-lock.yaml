@@ -41,6 +41,9 @@ importers:
       '@safe-global/safe-deployments':
         specifier: ^1.28.0
         version: 1.37.32
+      '@safe-global/safe-singleton-factory':
+        specifier: ^1.0.43
+        version: 1.0.43
       '@safe-global/types-kit':
         specifier: ^1.0.4
         version: 1.0.5(typescript@5.8.3)
@@ -560,6 +563,9 @@ packages:
 
   '@safe-global/safe-modules-deployments@2.2.8':
     resolution: {integrity: sha512-XqRhEUzO8PNs5kCXztlPmQJBZO+YTDCRbiumCr5JBuS8RhU0pRSkG5Gs8qjKlZicxZvy3IdXZ14APVwb6+dj/Q==}
+
+  '@safe-global/safe-singleton-factory@1.0.43':
+    resolution: {integrity: sha512-LS9icXdiw31C4bLcFVweq4NeNsRCJZmA/g5j2Jy31dWxY2gpyEGQs/SgxM9n3CueLqt1UQ7LjLGad//ch3Uq2Q==}
 
   '@safe-global/types-kit@1.0.5':
     resolution: {integrity: sha512-LcAsApV1MDEEymw3ealYjFEoD+PoruPG7Ggt6eF+LX++OGFowMQAS+zK2d5sRReqFjxwUJzMGlS48aQKlQpfZg==}
@@ -3142,6 +3148,8 @@ snapshots:
       semver: 7.7.2
 
   '@safe-global/safe-modules-deployments@2.2.8': {}
+
+  '@safe-global/safe-singleton-factory@1.0.43': {}
 
   '@safe-global/types-kit@1.0.5(typescript@5.8.3)':
     dependencies:
