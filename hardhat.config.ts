@@ -6,7 +6,7 @@ import "@nomicfoundation/hardhat-chai-matchers";
 
 import { BigNumber } from "@ethersproject/bignumber";
 import { DeterministicDeploymentInfo } from "hardhat-deploy/dist/types";
-import { getSingletonFactoryInfo } from "@gnosis.pm/safe-singleton-factory";
+import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
 
 import { zksend, sign, prove, createZkSafe } from "./zksafe/zksafe";
 
@@ -62,7 +62,7 @@ const getAccounts = function(): string[] {
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: "0.8.12",
+        version: "0.8.27",
         settings: {
             optimizer: {  enabled: true, runs: 200 }
         }

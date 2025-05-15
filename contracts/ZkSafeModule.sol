@@ -2,18 +2,18 @@
 
 pragma solidity ^0.8.12;
 
-import {UltraVerifier} from "../circuits/contract/circuits/plonk_vk.sol";
-import "@gnosis.pm/safe-contracts/contracts/common/Enum.sol";
-import "@gnosis.pm/safe-contracts/contracts/GnosisSafe.sol";
+import {HonkVerifier} from "../circuits/target/Verifier.sol";
+import "@safe-global/safe-contracts/contracts/common/Enum.sol";
+import "@safe-global/safe-contracts/contracts/Safe.sol";
 import "hardhat/console.sol";
 
 /* @title ZkSafeModule
- * @dev This contract implements a module for Gnosis Safe that allows for zk-SNARK verification of transactions.
+ * @dev This contract implements a module for Safe{Wallet} that allows for zk-SNARK verification of transactions.
  */
 contract ZkSafeModule {
-    UltraVerifier verifier;
+    HonkVerifier verifier;
 
-    constructor(UltraVerifier _verifier) {
+    constructor(HonkVerifier _verifier) {
         verifier = _verifier;
     }
 
@@ -21,7 +21,7 @@ contract ZkSafeModule {
         return "ZkSafeModule/v0.0.1";
     }
 
-    // Basic representation of a Gnosis Safe transaction supported by zkSafe.
+    // Basic representation of a Safe{Wallet} transaction supported by zkSafe.
     struct Transaction {
         address to;
         uint256 value;
@@ -30,12 +30,12 @@ contract ZkSafeModule {
     }
 
     /*
-     * @dev Enables a module on a Gnosis Safe contract.
+     * @dev Enables a module on a Safe{Wallet} contract.
      * @param module The address of the module to enable.
      */
     function enableModule(address module) external {
         address payable thisAddr = payable(address(this));
-        GnosisSafe(thisAddr).enableModule(module);
+        Safe(thisAddr).enableModule(module);
     }
 
     function increaseNonce(uint256 nonce) public {
@@ -59,7 +59,7 @@ contract ZkSafeModule {
      * @return True if the proof is valid, false otherwise.
      */
     function verifyZkSafeTransaction(
-        GnosisSafe safeContract,
+        Safe safeContract,
         bytes32 txHash,
         bytes calldata proof
     ) public view returns (bool) {
@@ -102,19 +102,19 @@ contract ZkSafeModule {
     }
 
     /*
-     * @dev Sends a transaction to a Gnosis Safe contract.
-     * @param safeContract The address of the Gnosis Safe contract.
+     * @dev Sends a transaction to a Safe contract.
+     * @param safeContract The address of the Safe contract.
      * @param transaction The transaction to be sent.
      * @param proof The zk-SNARK proof.
      * @return True if the transaction was successful, false otherwise.
      */
     function sendZkSafeTransaction(
-        GnosisSafe safeContract,
+        Safe safeContract,
         // The Safe address to which the transaction will be sent.
         Transaction calldata transaction,
         // The proof blob.
         bytes calldata proof
-    ) public virtual returns (bool) {
+    ) public virtual returns (bool result) {
         uint256 nonce = safeContract.nonce();
         bytes32 txHash = keccak256(
             safeContract.encodeTransactionData(
@@ -149,7 +149,7 @@ contract ZkSafeModule {
         require(safeContract.nonce() == nonce + 1, "Nonce not increased");
 
         // All clean: can run the    
-        bool result = safeContract.execTransactionFromModule(
+        result = safeContract.execTransactionFromModule(
             transaction.to,
             transaction.value,
             transaction.data,

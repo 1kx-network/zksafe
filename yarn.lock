@@ -427,21 +427,6 @@
   resolved "https://registry.yarnpkg.com/@fastify/busboy/-/busboy-2.1.1.tgz#b9da6a878a371829a0502c9b6c1c143ef6663f4d"
   integrity sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==
 
-"@gnosis.pm/mock-contract@^4.0.0":
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/@gnosis.pm/mock-contract/-/mock-contract-4.0.0.tgz#eaf500fddcab81b5f6c22280a7b22ff891dd6f87"
-  integrity sha512-SkRq2KwPx6vo0LAjSc8JhgQstrQFXRyn2yqquIfub7r2WHi5nUbF8beeSSXsd36hvBcQxQfmOIYNYRpj9JOhrQ==
-
-"@gnosis.pm/safe-contracts@^1.3.0":
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/@gnosis.pm/safe-contracts/-/safe-contracts-1.3.0.tgz#316741a7690d8751a1f701538cfc9ec80866eedc"
-  integrity sha512-1p+1HwGvxGUVzVkFjNzglwHrLNA67U/axP0Ct85FzzH8yhGJb4t9jDjPYocVMzLorDoWAfKicGy1akPY9jXRVw==
-
-"@gnosis.pm/safe-singleton-factory@^1.0.14":
-  version "1.0.14"
-  resolved "https://registry.yarnpkg.com/@gnosis.pm/safe-singleton-factory/-/safe-singleton-factory-1.0.14.tgz#42dae9a91fda21b605f94bfe310a7fccc6a4d738"
-  integrity sha512-xZ26c9uKzpd5Sm8ux0sZHt5QC8n+Q2z1/X5xjPnd8aT5EcKH5t1GgLbAqjrMFmXVIOkiWSc7wi2Bj4XfgtiyaQ==
-
 "@jridgewell/resolve-uri@^3.0.3":
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/@jridgewell/resolve-uri/-/resolve-uri-3.1.1.tgz#c08679063f279615a3326583ba3a90d1d82cc721"
@@ -776,6 +761,11 @@
     web3-core "^1.10.3"
     web3-utils "^1.10.3"
 
+"@safe-global/safe-contracts@^1.4.1":
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/@safe-global/safe-contracts/-/safe-contracts-1.4.1.tgz#82605342f3289dc6b99818f599a3409ec2cb3fdc"
+  integrity sha512-fP1jewywSwsIniM04NsqPyVRFKPMAuirC3ftA/TA4X3Zc5EnwQp/UCJUU2PL/37/z/jMo8UUaJ+pnFNWmMU7dQ==
+
 "@safe-global/safe-core-sdk-types@^2.3.0":
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@safe-global/safe-core-sdk-types/-/safe-core-sdk-types-2.3.0.tgz#e3be109e58a2d224d1b89052563b04f3efed4bec"
@@ -793,6 +783,11 @@
   integrity sha512-zWn55unMucN3i3awjDA0XxH9BzGNHyC/qCbuISBh0GMZP/q+VCxERAOEO4OqwyGaxk6sSAzP4usGdmgz2y2svg==
   dependencies:
     semver "^7.3.7"
+
+"@safe-global/safe-singleton-factory@^1.0.43":
+  version "1.0.43"
+  resolved "https://registry.yarnpkg.com/@safe-global/safe-singleton-factory/-/safe-singleton-factory-1.0.43.tgz#f4e2d7e4cb28933dfa41e5de20938cc4df2770c7"
+  integrity sha512-LS9icXdiw31C4bLcFVweq4NeNsRCJZmA/g5j2Jy31dWxY2gpyEGQs/SgxM9n3CueLqt1UQ7LjLGad//ch3Uq2Q==
 
 "@scure/base@~1.1.0":
   version "1.1.6"

@@ -68,8 +68,8 @@ describe("ZkSafeModule", function () {
 
         await deployments.fixture();
 
-        const deployedSafe = await deployments.get("GnosisSafeL2");
-        const deployedSafeFactory = await deployments.get("GnosisSafeProxyFactory");
+        const deployedSafe = await deployments.get("SafeL2");
+        const deployedSafeFactory = await deployments.get("SafeProxyFactory");
         const deployedMultiSend = await deployments.get("MultiSend");
         const deployedMultiSendCallOnly = await deployments.get("MultiSendCallOnly");
         const deployedCompatibilityFallbackHandler = await deployments.get("CompatibilityFallbackHandler");
