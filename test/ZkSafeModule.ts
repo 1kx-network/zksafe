@@ -1,6 +1,7 @@
 import hre, { deployments } from 'hardhat';
 import { expect } from "chai";
-import { WalletClient, PublicClient, zeroAddress, parseEther, encodeFunctionData, toHex, fromHex, concatHex, Account, toBytes, recoverMessageAddress, recoverPublicKey } from "viem";
+import assert = require('assert');
+import { WalletClient, PublicClient, zeroAddress, parseEther, encodeFunctionData, toHex, fromHex, concatHex, Account, toBytes, fromBytes, recoverAddress, recoverPublicKey, Hex, getContract } from "viem";
 import Safe, {
     ContractNetworksConfig,
     PredictedSafeProps,
@@ -12,7 +13,8 @@ import { ZkSafeModule } from "../typechain-types";
 import circuit from '../circuits/target/circuits.json';
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
 import { Noir } from '@noir-lang/noir_js';
-import { MetaTransactionData, SafeSignature, OperationType } from "@safe-global/types-kit";
+import { MetaTransactionData, SafeSignature, SafeTransaction, OperationType, SafeTransactionData } from "@safe-global/types-kit";
+import { safeSignMessage } from '@safe-global/safe-contracts';
 
 /// Extract x and y coordinates from a serialized ECDSA public key.
 function extractCoordinates(serializedPubKey: string): { x: number[], y: number[] } {
@@ -51,6 +53,47 @@ function padArray(arr: any[], length: number, fill: any = 0) {
     return arr.concat(Array(length - arr.length).fill(fill));
 }
 
+const DEFAULT_TRANSACTION = {
+    to: zeroAddress,
+    value: "0x0",
+    data: "0x",
+    operation: 0,
+    // default fields below
+    safeTxGas: "0x0",
+    baseGas: "0x0",
+    gasPrice: "0x0",
+    gasToken: zeroAddress,
+    refundReceiver: zeroAddress,
+}
+
+function makeSafeTransaction(nonce: number, fields: Partial<SafeTransactionData>) {
+    return { nonce, ...DEFAULT_TRANSACTION, ...fields }
+}
+
+async function getContractNetworks(chainId: number): Promise<ContractNetworksConfig> {
+    const deploymentAddresses = Object.fromEntries(
+        await Promise.all(
+            Object.entries({
+                safeSingletonAddress: "SafeL2",
+                safeProxyFactoryAddress: "SafeProxyFactory",
+                multiSendAddress: "MultiSend",
+                multiSendCallOnlyAddress:  "MultiSendCallOnly",
+                fallbackHandlerAddress: "CompatibilityFallbackHandler",
+                signMessageLibAddress:  "SignMessageLib",
+                createCallAddress:  "CreateCall",
+            }).map(async ([key, value]) => [key, (await deployments.get(value)).address])
+        )
+    )
+    return {
+        [chainId.toString()]: {
+            ...deploymentAddresses,
+            simulateTxAccessorAddress: zeroAddress,
+            safeWebAuthnSignerFactoryAddress: zeroAddress,
+            safeWebAuthnSharedSignerAddress: zeroAddress,
+        }
+    }
+}
+
 describe("ZkSafeModule", function () {
 
     let namedAccounts: { [name: string]: string };
@@ -66,8 +109,8 @@ describe("ZkSafeModule", function () {
     let zkSafeModule: ZkSafeModule;
     let verifierContract: any;
 
-    let createSafeFromWalletAddress: (wallet: WalletClient, safeAddress: string) => Promise<Safe>;
-    let signTransactionFromUser: (wallet: WalletClient, safe: Safe, txHash: string) => Promise<SafeSignature>;
+    let createSafeFromWalletAddress:  (wallet: WalletClient, safeAddress: string) => Promise<Safe>;
+    let signTransactionFromUser: (wallet: WalletClient, safe: Safe, transaction: SafeTransaction) => Promise<SafeSignature>;
 
     // New Noir Way
     let noir: Noir;
@@ -90,56 +133,29 @@ describe("ZkSafeModule", function () {
         namedAccounts = await hre.getNamedAccounts();
         walletClient = accounts[0];
         usersWalletClient = accounts[1];
-
-        const deploymentAddresses = Object.fromEntries(
-            await Promise.all(
-                Object.entries({
-                    safeSingletonAddress: "SafeL2",
-                    safeProxyFactoryAddress: "SafeProxyFactory",
-                    multiSendAddress: "MultiSend",
-                    multiSendCallOnlyAddress:  "MultiSendCallOnly",
-                    fallbackHandlerAddress: "CompatibilityFallbackHandler",
-                    signMessageLibAddress:  "SignMessageLib",
-                    createCallAddress:  "CreateCall",
-                }).map(async ([key, value]) => [key, (await deployments.get(value)).address])
-            )
-        );
-
-        const chainIdStr = walletClient.chain?.id.toString() ?? "1";
-        console.log("chainId: ", chainIdStr);
-        
-        const contractNetworks: ContractNetworksConfig = {
-            [chainIdStr]: {
-                ...deploymentAddresses,
-                simulateTxAccessorAddress: zeroAddress,
-                safeWebAuthnSignerFactoryAddress: zeroAddress,
-                safeWebAuthnSharedSignerAddress: zeroAddress,
-            }
-        };
+        const chainId = walletClient.chain?.id ?? 1;
 
         createSafeFromWalletAddress = async (wallet: WalletClient, safeAddress: string): Promise<Safe> => {
             return await Safe.init({
                 provider: wallet.transport,
                 signer: wallet.account?.address,
                 safeAddress,
-                contractNetworks,
+                contractNetworks: await getContractNetworks(chainId),
             });
         }
-        
-        const safeAccountConfig: SafeAccountConfig =  {
-            owners: [namedAccounts.users],
-            threshold: 1,
-        };
-        const predictedSafe: PredictedSafeProps = {
-            safeAccountConfig,
-        };
-
+    
         safe = await Safe.init({
             provider: walletClient.transport,
-            predictedSafe,
-            contractNetworks,
+            predictedSafe: {
+                safeAccountConfig: {
+                    owners: [(accounts[0].account as Account).address,
+                               (accounts[1].account as Account).address,
+                               (accounts[2].account as Account).address],
+                    threshold: 1,
+                }
+            },
+            contractNetworks: await getContractNetworks(chainId),
         });
-        // [api, acirComposer, acirBuffer, acirBufferUncompressed] = await initCircuits();
 
         safeAddress = await safe.getAddress() as `0x${string}`;
         const deploymentTransaction = await safe.createSafeDeploymentTransaction();
@@ -164,9 +180,11 @@ describe("ZkSafeModule", function () {
         // initialized Safe.
         safe = await createSafeFromWalletAddress(usersWalletClient, safeAddress);
 
-        signTransactionFromUser = async (wallet: WalletClient, safe: Safe, txHash: string): Promise<SafeSignature> => {
+        signTransactionFromUser = async (wallet: WalletClient, safe: Safe, transaction: SafeTransaction): Promise<SafeSignature> => {
             const userSafe = await createSafeFromWalletAddress(wallet, await safe.getAddress());
-            return await userSafe.signHash(txHash);
+            const signerAddress = await userSafe.getSafeProvider().getSignerAddress();
+            const signedTransaction = await userSafe.signTransaction(transaction);
+            return signedTransaction.getSignature(signerAddress!)!;
         };
 
         // New Noir Way
@@ -176,40 +194,25 @@ describe("ZkSafeModule", function () {
         console.log("noir backend initialzied");
     });
 
+    function readjustSigFromEthSign(signature: SafeSignature): Hex {
+        const sig = toBytes(signature.data);
+        if (sig[64] > 30) {
+           sig[64] -= 4;
+        }
+        return fromBytes(sig, 'hex');
+    }
 
     it("Should succeed verification of a basic transaction", async function () {
 
         const nonce = await safe.getNonce();
         const threshold = await safe.getThreshold();
-        const safeTransactionData = {
-            to: zeroAddress,
-            value: "0x0",
-            data: "0x",
-            operation: 0,
-            // default fields below
-            safeTxGas: "0x0",
-            baseGas: "0x0",
-            gasPrice: "0x0",
-            gasToken: zeroAddress,
-            refundReceiver: zeroAddress,
-            nonce, 
-        }
-        console.log("transaction", safeTransactionData);
-        const transaction = await safe.createTransaction({ transactions: [safeTransactionData] });
+        const metaTransaction = makeSafeTransaction(nonce, {});
+        const transaction = await safe.createTransaction({ transactions: [metaTransaction] });
         const txHash = await safe.getTransactionHash(transaction);
-        console.log("txHash", txHash);
 
-        // Let's generate three signatures for the owners of the Safe.
-        // ok, our siganture is a EIP-712 signature, so we need to sign the hash of the transaction.
-        let safeTypedData = {
-            safeAddress: await safe.getAddress(),
-            safeVersion: await safe.getContractVersion(),
-            chainId: await safe.getChainId(),
-            safeTransactionData: safeTransactionData,
-        }; 
-        const sig1 = await signTransactionFromUser(accounts[0], safe, txHash);
-        const sig2 = await signTransactionFromUser(accounts[1], safe, txHash);
-        const sig3 = await signTransactionFromUser(accounts[2], safe, txHash);
+        const sig1 = await signTransactionFromUser(accounts[0], safe, transaction);
+        const sig2 = await signTransactionFromUser(accounts[1], safe, transaction);
+        const sig3 = await signTransactionFromUser(accounts[2], safe, transaction);
 
         const nil_pubkey = {
             x: Array.from(toBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")),
@@ -224,10 +227,7 @@ describe("ZkSafeModule", function () {
         
         // Sort signatures by address - this is how the Safe contract does it.
         const sortedSignatures = await Promise.all(signatures.map(async (sig) => {
-            const addr = await recoverMessageAddress({ 
-                message: { raw: txHash as `0x${string}` }, 
-                signature: sig.data as `0x${string}` 
-            });
+            const addr = await recoverAddress({hash: txHash as Hex, signature: sig.data as Hex});
             return { sig, addr };
         }));
         sortedSignatures.sort((a, b) => a.addr.localeCompare(b.addr));
