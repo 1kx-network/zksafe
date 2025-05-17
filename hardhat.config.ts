@@ -2,6 +2,7 @@ import { HardhatUserConfig } from "hardhat/types";
 import "hardhat-deploy";
 import "@nomicfoundation/hardhat-toolbox-viem";
 import "@nomicfoundation/hardhat-ignition";
+import "@nomicfoundation/hardhat-ignition-viem";
 // import "@nomicfoundation/hardhat-chai-matchers";
 
 import { DeterministicDeploymentInfo } from "hardhat-deploy/dist/types";

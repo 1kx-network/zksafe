@@ -9,7 +9,7 @@ import Safe, {
 } from '@safe-global/protocol-kit';
 import { MetaTransactionData, SafeSignature, SafeTransaction, OperationType, SafeTransactionData } from "@safe-global/types-kit";
 
-import { ZkSafeModule } from "../typechain-types";
+import ZkSafeModule from "../ignition/modules/zkSafe";
 
 import circuit from '../circuits/target/circuits.json';
 import { UltraHonkBackend } from '@aztec/bb.js';
@@ -105,9 +105,8 @@ describe("ZkSafeModule", function () {
     let usersWalletClient: WalletClient;
 
     let safe: Safe;
-    let zkSafeModule: ZkSafeModule;
+    let zkSafeModule: any;
     let verifierContract: any;
-    let zkSafeModuleDeployed: boolean = false;
 
     let createSafeFromWalletAddress:  (wallet: WalletClient, safeAddress: string) => Promise<Safe>;
     let signTransactionFromUser: (wallet: WalletClient, safe: Safe, transaction: SafeTransaction) => Promise<SafeSignature>;
@@ -118,6 +117,13 @@ describe("ZkSafeModule", function () {
 
     before(async function () {
         await deployments.fixture();
+
+        const result = await hre.ignition.deploy(ZkSafeModule);
+        zkSafeModule = result.zkSafeModule;
+        verifierContract = result.verifier;
+
+        console.log("zkSafeModule: ", zkSafeModule);
+        console.log("zkSafeModule: ", typeof(zkSafeModule));
 
         // Get deployer account
         accounts = await hre.viem.getWalletClients();
@@ -262,29 +268,16 @@ describe("ZkSafeModule", function () {
         const safeAddress = await safe.getAddress();
         // First we need to get the verifier contract
         // Typically you would initialize this earlier in the before() function
-        if (verifierContract === undefined) {
-            const VerifierFactory = await hre.ethers.getContractFactory("HonkVerifier");
-            verifierContract = await VerifierFactory.deploy();
-            await verifierContract.deployed();
-        }
 
-        const directVerification = await verifierContract.verify(proof.proof, proof.publicInputs);
+        const directVerification = await verifierContract.read.verify([proof.proof, proof.publicInputs]);
         console.log("directVerification", directVerification);
 
-        // Deploy ZkSafeModule if not deployed yet
-        if (!zkSafeModuleDeployed) {
-            const ZkSafeModuleFactory = await hre.ethers.getContractFactory("ZkSafeModule");
-            zkSafeModule = await ZkSafeModuleFactory.deploy(verifierContract.address);
-            await zkSafeModule.deployed();
-            zkSafeModuleDeployed = true;
-        }
-
-        const contractVerification = await zkSafeModule.verifyZkSafeTransaction(safeAddress, txHash, proof.proof);
+        const contractVerification = await zkSafeModule.read.verifyZkSafeTransaction([safeAddress, txHash, proof.proof]);
         console.log("contractVerification", contractVerification);
 
         console.log("safe: ", safe);
         console.log("transaction: ", transaction);
-        const txn = await zkSafeModule.sendZkSafeTransaction(
+        const txn = await zkSafeModule.write.sendZkSafeTransaction([
             safeAddress,
             { to: transaction.data.to,
               value: BigInt(transaction.data.value),
@@ -293,6 +286,7 @@ describe("ZkSafeModule", function () {
             },
             proof.proof,
             { gasLimit: 2000000 }
+            ]
         );
 
         let receipt = txn.wait();
@@ -310,19 +304,11 @@ describe("ZkSafeModule", function () {
             operation: 0,
         }
 
-        // Deploy ZkSafeModule if not deployed yet
-        if (!zkSafeModuleDeployed) {
-            const ZkSafeModuleFactory = await hre.ethers.getContractFactory("ZkSafeModule");
-            zkSafeModule = await ZkSafeModuleFactory.deploy(verifierContract.address);
-            await zkSafeModule.deployed();
-            zkSafeModuleDeployed = true;
-        }
-
-        const txn = zkSafeModule.sendZkSafeTransaction(
-            "0x0000000000000000000000000000000000000000",
-            transaction,
-            "0x", // proof
-        );
+        const txn = zkSafeModule.write.sendZkSafeTransaction([
+          "0x0000000000000000000000000000000000000000",
+          transaction,
+          "0x", // proof
+        ]);
 
         expect(txn).to.be.rejected;
     });
@@ -336,12 +322,12 @@ describe("ZkSafeModule", function () {
             operation: 0,
         }
 
-        const txn = await zkSafeModule.sendZkSafeTransaction(
+        const txn = await zkSafeModule.write.sendZkSafeTransaction([
             await safe.getAddress(),
             transaction,
             "0x0000000000000000", // proof
             { gasLimit: 2000000 }
-        );
+        ]);
 
         expect(txn).to.be.rejectedWith("Invalid proof");
     });

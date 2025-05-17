@@ -49,7 +49,7 @@ importers:
         specifier: ^0.15.10
         version: 0.15.11(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.24.0(ts-node@10.9.2(@types/node@22.15.18)(typescript@5.8.3))(typescript@5.8.3)))(hardhat@2.24.0(ts-node@10.9.2(@types/node@22.15.18)(typescript@5.8.3))(typescript@5.8.3))
       '@nomicfoundation/hardhat-ignition-viem':
-        specifier: ^0.15.10
+        specifier: ^0.15.11
         version: 0.15.11(@nomicfoundation/hardhat-ignition@0.15.11(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.24.0(ts-node@10.9.2(@types/node@22.15.18)(typescript@5.8.3))(typescript@5.8.3)))(hardhat@2.24.0(ts-node@10.9.2(@types/node@22.15.18)(typescript@5.8.3))(typescript@5.8.3)))(@nomicfoundation/hardhat-viem@2.0.6(hardhat@2.24.0(ts-node@10.9.2(@types/node@22.15.18)(typescript@5.8.3))(typescript@5.8.3))(typescript@5.8.3)(viem@2.29.3(typescript@5.8.3)))(@nomicfoundation/ignition-core@0.15.11)(hardhat@2.24.0(ts-node@10.9.2(@types/node@22.15.18)(typescript@5.8.3))(typescript@5.8.3))(viem@2.29.3(typescript@5.8.3))
       '@nomicfoundation/hardhat-network-helpers':
         specifier: ^1.0.12
@@ -97,10 +97,10 @@ importers:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@22.15.18)(typescript@5.8.3)
       typescript:
-        specifier: ~5.8.2
+        specifier: ~5.8.3
         version: 5.8.3
       viem:
-        specifier: ^2.24.1
+        specifier: ^2.29.3
         version: 2.29.3(typescript@5.8.3)
 
 packages:

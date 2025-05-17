@@ -7,7 +7,7 @@
   "license": "MIT",
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "^0.15.10",
-    "@nomicfoundation/hardhat-ignition-viem": "^0.15.10",
+    "@nomicfoundation/hardhat-ignition-viem": "^0.15.11",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.12",
     "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.13",
@@ -23,8 +23,8 @@
     "hardhat-gas-reporter": "^1.0.10",
     "solidity-coverage": "^0.8.14",
     "ts-node": "^10.9.2",
-    "typescript": "~5.8.2",
-    "viem": "^2.24.1"
+    "typescript": "~5.8.3",
+    "viem": "^2.29.3"
   },
   "dependencies": {
     "@aztec/bb.js": "^0.86.0",
