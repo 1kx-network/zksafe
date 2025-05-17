@@ -27,20 +27,17 @@
     "viem": "^2.24.1"
   },
   "dependencies": {
-    "@aztec/bb.js": "^0.8.14",
-    "@noir-lang/backend_barretenberg": "^0.19.4",
-    "@noir-lang/noir_js": "^0.19.4",
-    "@noir-lang/noir_wasm": "^0.19.4",
-    "@noir-lang/source-resolver": "^0.19.4",
-    "@noir-lang/types": "^0.19.4",
-    "@safe-global/protocol-kit": "^6.0.4",
-    "@safe-global/safe-deployments": "^1.28.0",
-    "@safe-global/safe-singleton-factory": "^1.0.43",
-    "add": "^2.0.6",
+    "@aztec/bb.js": "^0.86.0",
+    "@noir-lang/noir_js": "1.0.0-beta.6",
     "@nomicfoundation/slang": "^1.0.0",
     "@openzeppelin/contracts": "^5.2.0",
+    "@safe-global/protocol-kit": "^6.0.4",
     "@safe-global/safe-contracts": "1.4.1-2",
+    "@safe-global/safe-deployments": "^1.28.0",
+    "@safe-global/safe-singleton-factory": "^1.0.43",
     "@safe-global/types-kit": "^1.0.4",
-    "hardhat-ethers": "^1.0.1"
- }
+    "add": "^2.0.6",
+    "hardhat-ethers": "^1.0.1",
+    "msgpackr": "^1.11.3"
+  }
 }

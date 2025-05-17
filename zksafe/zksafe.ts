@@ -4,8 +4,8 @@ import { SafeTransactionData } from '@safe-global/safe-core-sdk-types';
 
 
 import circuit from '../circuits/target/circuits.json';
-import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
 import { Noir } from '@noir-lang/noir_js';
+import { UltraHonkBackend } from '@aztec/bb.js';
 import { ethers } from "ethers";
 import { vars } from "hardhat/config";
 
@@ -123,8 +123,8 @@ export async function prove(hre, safeAddr: string, txHash: string, signatures_: 
     console.log("  chainId: ", await safe.getChainId());
     console.log("  balance: ", ethers.formatEther(await safe.getBalance()));
 
-    const backend = new BarretenbergBackend(circuit);
-    const noir = new Noir(circuit, backend);
+    const backend = new UltraHonkBackend(circuit.bytecode);
+    const noir = new Noir(circuit);
     await noir.init();
     console.log("noir backend initialzied");
 
@@ -148,8 +148,12 @@ export async function prove(hre, safeAddr: string, txHash: string, signatures_: 
         txn_hash: Array.from(ethers.getBytes(txHash)),
         owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
     };
-    const correctProof = await noir.generateFinalProof(input);
-    console.log("Proof: ", ethers.hexlify(correctProof.proof));
+    // Generate witness first
+    const { witness } = await noir.execute(input);
+
+    // Use backend to generate proof from witness
+    const proof = await backend.generateProof(witness);
+    console.log("Proof: ", ethers.hexlify(proof.proof));
 }
 
 export async function sign(hre, safeAddr: string, to: string, value: string, data: string) {

@@ -7,14 +7,13 @@ import Safe, {
     PredictedSafeProps,
     SafeAccountConfig,
 } from '@safe-global/protocol-kit';
+import { MetaTransactionData, SafeSignature, SafeTransaction, OperationType, SafeTransactionData } from "@safe-global/types-kit";
 
 import { ZkSafeModule } from "../typechain-types";
 
 import circuit from '../circuits/target/circuits.json';
-import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
+import { UltraHonkBackend } from '@aztec/bb.js';
 import { Noir } from '@noir-lang/noir_js';
-import { MetaTransactionData, SafeSignature, SafeTransaction, OperationType, SafeTransactionData } from "@safe-global/types-kit";
-import { safeSignMessage } from '@safe-global/safe-contracts';
 
 /// Extract x and y coordinates from a serialized ECDSA public key.
 function extractCoordinates(serializedPubKey: string): { x: number[], y: number[] } {
@@ -108,13 +107,14 @@ describe("ZkSafeModule", function () {
     let safe: Safe;
     let zkSafeModule: ZkSafeModule;
     let verifierContract: any;
+    let zkSafeModuleDeployed: boolean = false;
 
     let createSafeFromWalletAddress:  (wallet: WalletClient, safeAddress: string) => Promise<Safe>;
     let signTransactionFromUser: (wallet: WalletClient, safe: Safe, transaction: SafeTransaction) => Promise<SafeSignature>;
 
     // New Noir Way
     let noir: Noir;
-    let correctProof: Uint8Array;
+    let backend: UltraHonkBackend;
 
     before(async function () {
         await deployments.fixture();
@@ -143,7 +143,7 @@ describe("ZkSafeModule", function () {
                 contractNetworks: await getContractNetworks(chainId),
             });
         }
-    
+
         safe = await Safe.init({
             provider: walletClient.transport,
             predictedSafe: {
@@ -188,8 +188,8 @@ describe("ZkSafeModule", function () {
         };
 
         // New Noir Way
-        const backend = new BarretenbergBackend(circuit);
-        noir = new Noir(circuit, backend);
+        backend = new UltraHonkBackend(circuit.bytecode);
+        noir = new Noir(circuit);
         await noir.init();
         console.log("noir backend initialzied");
     });
@@ -218,13 +218,13 @@ describe("ZkSafeModule", function () {
             x: Array.from(toBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")),
             y: Array.from(toBytes("0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
         };
-        // Our Nil signature is a signature with r and s set to 
+        // Our Nil signature is a signature with r and s set to
         const nil_signature = Array.from(
             toBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"));
         const zero_address = new Array(20).fill(0);
 
         const signatures = [sig2, sig3]; // sig1 is not included, threshold of 2 should be enough.
-        
+
         // Sort signatures by address - this is how the Safe contract does it.
         const sortedSignatures = await Promise.all(signatures.map(async (sig) => {
             const addr = await recoverAddress({hash: txHash as Hex, signature: sig.data as Hex});
@@ -236,9 +236,9 @@ describe("ZkSafeModule", function () {
         const input = {
             threshold: await safe.getThreshold(),
             signers: padArray(await Promise.all(sortedSigs.map(async (sig) => {
-                const pubKey = await recoverPublicKey({ 
+                const pubKey = await recoverPublicKey({
                     hash: txHash as `0x${string}`,
-                    signature: sig.data as `0x${string}` 
+                    signature: sig.data as `0x${string}`
                 });
                 return extractCoordinates(pubKey);
             })), 10, nil_pubkey),
@@ -246,17 +246,38 @@ describe("ZkSafeModule", function () {
             txn_hash: Array.from(toBytes(txHash as `0x${string}`)),
             owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
         };
-        const proof = await noir.generateFinalProof(input);
+        // Generate witness first
+        const { witness } = await noir.execute(input);
+
+        // Use backend to generate proof from witness
+        const proof = await backend.generateProof(witness);
         console.log("correctProof", proof);
 
-        const verification = await noir.verifyFinalProof(proof);
+        // Verify proof
+        const verification = await backend.verifyProof(proof);
         expect(verification).to.be.true;
         console.log("verification in JS succeeded");
 
 
         const safeAddress = await safe.getAddress();
-        const directVerification = await verifierContract.verify(proof.proof, [...proof.publicInputs.values()]);
+        // First we need to get the verifier contract
+        // Typically you would initialize this earlier in the before() function
+        if (verifierContract === undefined) {
+            const VerifierFactory = await hre.ethers.getContractFactory("HonkVerifier");
+            verifierContract = await VerifierFactory.deploy();
+            await verifierContract.deployed();
+        }
+
+        const directVerification = await verifierContract.verify(proof.proof, proof.publicInputs);
         console.log("directVerification", directVerification);
+
+        // Deploy ZkSafeModule if not deployed yet
+        if (!zkSafeModuleDeployed) {
+            const ZkSafeModuleFactory = await hre.ethers.getContractFactory("ZkSafeModule");
+            zkSafeModule = await ZkSafeModuleFactory.deploy(verifierContract.address);
+            await zkSafeModule.deployed();
+            zkSafeModuleDeployed = true;
+        }
 
         const contractVerification = await zkSafeModule.verifyZkSafeTransaction(safeAddress, txHash, proof.proof);
         console.log("contractVerification", contractVerification);
@@ -289,6 +310,14 @@ describe("ZkSafeModule", function () {
             operation: 0,
         }
 
+        // Deploy ZkSafeModule if not deployed yet
+        if (!zkSafeModuleDeployed) {
+            const ZkSafeModuleFactory = await hre.ethers.getContractFactory("ZkSafeModule");
+            zkSafeModule = await ZkSafeModuleFactory.deploy(verifierContract.address);
+            await zkSafeModule.deployed();
+            zkSafeModuleDeployed = true;
+        }
+
         const txn = zkSafeModule.sendZkSafeTransaction(
             "0x0000000000000000000000000000000000000000",
             transaction,
@@ -299,7 +328,7 @@ describe("ZkSafeModule", function () {
     });
 
     xit("Should fail a basic transaction with a wrong proof", async function () {
-        
+
         const transaction  = {
             to: "0x0000000000000000000000000000000000000000",
             value: 0,
