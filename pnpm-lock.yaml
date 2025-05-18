@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@aztec/bb.js':
-        specifier: ^0.86.0
-        version: 0.86.0
+        specifier: ^0.84.0
+        version: 0.84.0
       '@noir-lang/noir_js':
-        specifier: 1.0.0-beta.6
-        version: 1.0.0-beta.6
+        specifier: 1.0.0-beta.3
+        version: 1.0.0-beta.3
       '@nomicfoundation/slang':
         specifier: ^1.0.0
         version: 1.1.0
@@ -111,8 +111,8 @@ packages:
   '@adraffy/ens-normalize@1.11.0':
     resolution: {integrity: sha512-/3DDPKHqqIqxUULp8yP4zODUY1i+2xvVWsv8A79xGWdCAG+8sb0hRh0Rk2QyOJUnnbyPUAZYcpBuRe3nS2OIUg==}
 
-  '@aztec/bb.js@0.86.0':
-    resolution: {integrity: sha512-9XcEltM0qRJpNvowZ0w2TY1YCDXlktxupBG+HHi6P+snF/wBhAXPzJb5mdqEkVcVqcwXskVoBdj4XqTLNiPZKg==}
+  '@aztec/bb.js@0.84.0':
+    resolution: {integrity: sha512-jNx35PCtevQnIBAyld90JjI+fGTrhcbXH6FkcZoRRpBPvnlZVTmIAU3j16q136m+mFgIBlCuzjOE6ND4cOgnQQ==}
     hasBin: true
 
   '@bytecodealliance/preview2-shim@0.17.2':
@@ -415,17 +415,17 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@noir-lang/acvm_js@1.0.0-beta.6':
-    resolution: {integrity: sha512-/gaUKaUIon3xCekEIvrz9sUj+h1tue6CchNUZwmuXoqbwccRQchr850vbQMQxxnQvFIAfbaKD+Vkkh3RNWpG2Q==}
+  '@noir-lang/acvm_js@1.0.0-beta.3':
+    resolution: {integrity: sha512-Dc6g5rJr/x7tKsWvnTbZvjwqI1uiAtvq+NAz5tcLRzUHJw6NAvDXEH5h117h+BfIAhhsHXuPTkDfDB1Gnqp/Bg==}
 
-  '@noir-lang/noir_js@1.0.0-beta.6':
-    resolution: {integrity: sha512-FRHrCgRcyD4LAh4FtVYZh/wwdoV2px3kokudLl5GfFaBmXHCpXyA0jKzda3ObI/Teasl2VAE+ZQoV7ZKqq5txA==}
+  '@noir-lang/noir_js@1.0.0-beta.3':
+    resolution: {integrity: sha512-Nt/rP7zRMOfNq9urD8+GtRpYqEc0K10FoKXs/v+ZTbGaP6Jkm7+F+UPj2bkWy66k1HNzsN6ortli7c7mnLDHwA==}
 
-  '@noir-lang/noirc_abi@1.0.0-beta.6':
-    resolution: {integrity: sha512-AFRl7zAK1ooA7AeKTt5dSxjfcXdmpYU4imRx8MS/UGhuLvUULM6d+AQ/OGEb1kdGwnw+qN4REnxJg7R4qsRpVQ==}
+  '@noir-lang/noirc_abi@1.0.0-beta.3':
+    resolution: {integrity: sha512-L6BI64ennatwTUciHqQ14ahUFsgzL41tzghqUELzO7XojasStcWDaSMjlTxca/2pvpWtEJHDtseKe1VZWIIVXQ==}
 
-  '@noir-lang/types@1.0.0-beta.6':
-    resolution: {integrity: sha512-YmNOpr51XIOrJ+yppPbDFlpAG6ZU7qh0Uu0ZCXmon2MGD4TlnC8d/ex7YzSUH/+3zgESuCmicKnMVxEFszgmtA==}
+  '@noir-lang/types@1.0.0-beta.3':
+    resolution: {integrity: sha512-BPOmf0qDiTn4wH1Lo7mHa67GTQFueIVaDUcUb+N9+ALiXC5nVU8HrzWmx1yvZB64ZiCEy7yPdNEaNrszSrE2fg==}
 
   '@nomicfoundation/edr-darwin-arm64@0.11.0':
     resolution: {integrity: sha512-aYTVdcSs27XG7ayTzvZ4Yn9z/ABSaUwicrtrYK2NR8IH0ik4N4bWzo/qH8rax6rewVLbHUkGyGYnsy5ZN4iiMw==}
@@ -2353,7 +2353,7 @@ snapshots:
 
   '@adraffy/ens-normalize@1.11.0': {}
 
-  '@aztec/bb.js@0.86.0':
+  '@aztec/bb.js@0.84.0':
     dependencies:
       comlink: 4.4.2
       commander: 12.1.0
@@ -2970,20 +2970,19 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
 
-  '@noir-lang/acvm_js@1.0.0-beta.6': {}
+  '@noir-lang/acvm_js@1.0.0-beta.3': {}
 
-  '@noir-lang/noir_js@1.0.0-beta.6':
+  '@noir-lang/noir_js@1.0.0-beta.3':
     dependencies:
-      '@noir-lang/acvm_js': 1.0.0-beta.6
-      '@noir-lang/noirc_abi': 1.0.0-beta.6
-      '@noir-lang/types': 1.0.0-beta.6
-      pako: 2.1.0
+      '@noir-lang/acvm_js': 1.0.0-beta.3
+      '@noir-lang/noirc_abi': 1.0.0-beta.3
+      '@noir-lang/types': 1.0.0-beta.3
 
-  '@noir-lang/noirc_abi@1.0.0-beta.6':
+  '@noir-lang/noirc_abi@1.0.0-beta.3':
     dependencies:
-      '@noir-lang/types': 1.0.0-beta.6
+      '@noir-lang/types': 1.0.0-beta.3
 
-  '@noir-lang/types@1.0.0-beta.6': {}
+  '@noir-lang/types@1.0.0-beta.3': {}
 
   '@nomicfoundation/edr-darwin-arm64@0.11.0': {}
 

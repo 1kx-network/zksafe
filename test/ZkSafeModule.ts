@@ -269,12 +269,18 @@ describe("ZkSafeModule", function () {
         // First we need to get the verifier contract
         // Typically you would initialize this earlier in the before() function
 
-        const directVerification = await verifierContract.read.verify([proof.proof, proof.publicInputs]);
-        console.log("directVerification", directVerification);
+        // Convert Uint8Array proof to hex string for contract call
+        const proofHex = `0x${Buffer.from(proof.proof).toString('hex')}`;
 
-        const contractVerification = await zkSafeModule.read.verifyZkSafeTransaction([safeAddress, txHash, proof.proof]);
-        console.log("contractVerification", contractVerification);
+        // Print proof size for debugging
+        console.log("Proof size (bytes):", proof.proof.length);
 
+
+        const directVerification = await verifierContract.read.verify([proofHex, proof.publicInputs]);
+        console.log("directVerification:", directVerification);
+
+        const contractVerification = await zkSafeModule.read.verifyZkSafeTransaction([safeAddress, txHash, proofHex]);
+        console.log("contractVerification:", contractVerification);
         console.log("safe: ", safe);
         console.log("transaction: ", transaction);
         const txn = await zkSafeModule.write.sendZkSafeTransaction([
@@ -284,7 +290,7 @@ describe("ZkSafeModule", function () {
               data: transaction.data.data,
               operation: transaction.data.operation,
             },
-            proof.proof,
+            proofHex, // Use truncated proof for transaction
             { gasLimit: 2000000 }
             ]
         );
@@ -307,7 +313,7 @@ describe("ZkSafeModule", function () {
         const txn = zkSafeModule.write.sendZkSafeTransaction([
           "0x0000000000000000000000000000000000000000",
           transaction,
-          "0x", // proof
+          "0x", // empty proof
         ]);
 
         expect(txn).to.be.rejected;
@@ -325,7 +331,7 @@ describe("ZkSafeModule", function () {
         const txn = await zkSafeModule.write.sendZkSafeTransaction([
             await safe.getAddress(),
             transaction,
-            "0x0000000000000000", // proof
+            "0x0000000000000000", // invalid proof
             { gasLimit: 2000000 }
         ]);
 
