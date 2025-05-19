@@ -195,7 +195,7 @@ describe("ZkSafeModule", function () {
 
         // New Noir Way
         backend = new UltraHonkBackend(circuit.bytecode);
-        noir = new Noir(circuit);
+        noir = new Noir(circuit, backend);
         await noir.init();
         console.log("noir backend initialzied");
     });
@@ -252,34 +252,29 @@ describe("ZkSafeModule", function () {
             txn_hash: Array.from(toBytes(txHash as `0x${string}`)),
             owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
         };
+        console.log("input ", input);
         // Generate witness first
         const { witness } = await noir.execute(input);
 
         // Use backend to generate proof from witness
-        const proof = await backend.generateProof(witness);
+        const proof = await backend.generateProof(witness, { keccak: true });
         console.log("correctProof", proof);
 
         // Verify proof
-        const verification = await backend.verifyProof(proof);
+        const verification = await backend.verifyProof(proof, { keccak: true });
         expect(verification).to.be.true;
         console.log("verification in JS succeeded");
 
-
-        const safeAddress = await safe.getAddress();
         // First we need to get the verifier contract
         // Typically you would initialize this earlier in the before() function
 
         // Convert Uint8Array proof to hex string for contract call
         const proofHex = `0x${Buffer.from(proof.proof).toString('hex')}`;
-
-        // Print proof size for debugging
         console.log("Proof size (bytes):", proof.proof.length);
-
-
         const directVerification = await verifierContract.read.verify([proofHex, proof.publicInputs]);
         console.log("directVerification:", directVerification);
 
-        const contractVerification = await zkSafeModule.read.verifyZkSafeTransaction([safeAddress, txHash, proofHex]);
+        const contractVerification = await zkSafeModule.read.verifyZkSafeTransaction([await safe.getAddress(), txHash, proofHex]);
         console.log("contractVerification:", contractVerification);
         console.log("safe: ", safe);
         console.log("transaction: ", transaction);
