@@ -286,9 +286,7 @@ describe("ZkSafeModule", function () {
               operation: transaction.data.operation,
             },
             proofHex, // Use truncated proof for transaction
-            { gasLimit: 2000000 }
-            ]
-        );
+        ], { gas: 20000000n });
 
         let receipt = txn.wait();
         expect(txn).to.not.be.rejected;
@@ -309,7 +307,9 @@ describe("ZkSafeModule", function () {
           "0x0000000000000000000000000000000000000000",
           transaction,
           "0x", // empty proof
-        ]);
+        ],
+        { gasLimit: 20000000n }
+    );
 
         expect(txn).to.be.rejected;
     });
@@ -327,8 +327,9 @@ describe("ZkSafeModule", function () {
             await safe.getAddress(),
             transaction,
             "0x0000000000000000", // invalid proof
-            { gasLimit: 2000000 }
-        ]);
+        ],
+        { gasLimit: 20000000n }
+    );
 
         expect(txn).to.be.rejectedWith("Invalid proof");
     });
