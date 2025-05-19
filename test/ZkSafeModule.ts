@@ -286,7 +286,7 @@ describe("ZkSafeModule", function () {
               operation: transaction.data.operation,
             },
             proofHex, // Use truncated proof for transaction
-        ], { gas: 20000000n });
+        ]);
 
         const receipt = await publicClient.waitForTransactionReceipt({ hash: txn });
         expect(receipt.status).to.equal('success');
@@ -307,9 +307,7 @@ describe("ZkSafeModule", function () {
           "0x0000000000000000000000000000000000000000",
           transaction,
           "0x", // empty proof
-        ],
-        { gas: 20000000n }
-        )).to.be.rejected;
+        ])).to.be.rejected;
     });
 
     it("Should fail a basic transaction with a wrong proof", async function () {
@@ -325,8 +323,6 @@ describe("ZkSafeModule", function () {
             await safe.getAddress(),
             transaction,
             "0x" + "0".repeat(2 * 440 * 32), // invalid proof (440 * 32 zeros)
-        ],
-        { gas: 20000000n }
-        )).to.be.rejectedWith(/custom error/);
+        ])).to.be.rejectedWith(/custom error/);
     });
 });
