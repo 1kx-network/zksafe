@@ -122,9 +122,6 @@ describe("ZkSafeModule", function () {
         zkSafeModule = result.zkSafeModule;
         verifierContract = result.verifier;
 
-        console.log("zkSafeModule: ", zkSafeModule);
-        console.log("zkSafeModule: ", typeof(zkSafeModule));
-
         // Get deployer account
         accounts = await hre.viem.getWalletClients();
         publicClient = await hre.viem.getPublicClient();
@@ -150,6 +147,18 @@ describe("ZkSafeModule", function () {
             });
         }
 
+        const calldata = encodeFunctionData({
+            abi: [{
+                name: 'enableModule',
+                type: 'function',
+                stateMutability: 'nonpayable',
+                inputs: [{ name: 'module', type: 'address' }],
+                outputs: []
+            }],
+            functionName: 'enableModule',
+            args: [zkSafeModule.address]
+        });
+
         safe = await Safe.init({
             provider: walletClient.transport,
             predictedSafe: {
@@ -158,6 +167,8 @@ describe("ZkSafeModule", function () {
                                (accounts[1].account as Account).address,
                                (accounts[2].account as Account).address],
                     threshold: 1,
+                    to: zkSafeModule.address,
+                    data: calldata,
                 }
             },
             contractNetworks: await getContractNetworks(chainId),
@@ -197,7 +208,6 @@ describe("ZkSafeModule", function () {
         backend = new UltraHonkBackend(circuit.bytecode);
         noir = new Noir(circuit, backend);
         await noir.init();
-        console.log("noir backend initialzied");
     });
 
     function readjustSigFromEthSign(signature: SafeSignature): Hex {
@@ -252,32 +262,22 @@ describe("ZkSafeModule", function () {
             txn_hash: Array.from(toBytes(txHash as `0x${string}`)),
             owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
         };
-        console.log("input ", input);
         // Generate witness first
         const { witness } = await noir.execute(input);
 
         // Use backend to generate proof from witness
         const proof = await backend.generateProof(witness, { keccak: true });
-        console.log("correctProof", proof);
 
         // Verify proof
         const verification = await backend.verifyProof(proof, { keccak: true });
         expect(verification).to.be.true;
         console.log("verification in JS succeeded");
 
-        // First we need to get the verifier contract
-        // Typically you would initialize this earlier in the before() function
-
         // Convert Uint8Array proof to hex string for contract call
         const proofHex = `0x${Buffer.from(proof.proof).toString('hex')}`;
-        console.log("Proof size (bytes):", proof.proof.length);
         const directVerification = await verifierContract.read.verify([proofHex, proof.publicInputs]);
-        console.log("directVerification:", directVerification);
 
         const contractVerification = await zkSafeModule.read.verifyZkSafeTransaction([await safe.getAddress(), txHash, proofHex]);
-        console.log("contractVerification:", contractVerification);
-        console.log("safe: ", safe);
-        console.log("transaction: ", transaction);
         const txn = await zkSafeModule.write.sendZkSafeTransaction([
             safeAddress,
             { to: transaction.data.to,
@@ -288,8 +288,8 @@ describe("ZkSafeModule", function () {
             proofHex, // Use truncated proof for transaction
         ], { gas: 20000000n });
 
-        let receipt = txn.wait();
-        expect(txn).to.not.be.rejected;
+        const receipt = await publicClient.waitForTransactionReceipt({ hash: txn });
+        expect(receipt.status).to.equal('success');
         let newNonce = await safe.getNonce();
         expect(newNonce).to.equal(nonce + 1);
     });
@@ -303,18 +303,16 @@ describe("ZkSafeModule", function () {
             operation: 0,
         }
 
-        const txn = zkSafeModule.write.sendZkSafeTransaction([
+        await expect(zkSafeModule.write.sendZkSafeTransaction([
           "0x0000000000000000000000000000000000000000",
           transaction,
           "0x", // empty proof
         ],
-        { gasLimit: 20000000n }
-    );
-
-        expect(txn).to.be.rejected;
+        { gas: 20000000n }
+        )).to.be.rejected;
     });
 
-    xit("Should fail a basic transaction with a wrong proof", async function () {
+    it("Should fail a basic transaction with a wrong proof", async function () {
 
         const transaction  = {
             to: "0x0000000000000000000000000000000000000000",
@@ -323,15 +321,12 @@ describe("ZkSafeModule", function () {
             operation: 0,
         }
 
-        const txn = await zkSafeModule.write.sendZkSafeTransaction([
+        await expect(zkSafeModule.write.sendZkSafeTransaction([
             await safe.getAddress(),
             transaction,
-            "0x0000000000000000", // invalid proof
+            "0x" + "0".repeat(2 * 440 * 32), // invalid proof (440 * 32 zeros)
         ],
-        { gasLimit: 20000000n }
-    );
-
-        expect(txn).to.be.rejectedWith("Invalid proof");
+        { gas: 20000000n }
+        )).to.be.rejectedWith(/custom error/);
     });
-
 });
