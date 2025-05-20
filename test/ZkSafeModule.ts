@@ -14,7 +14,7 @@ import ZkSafeModule from "../ignition/modules/zkSafe";
 import circuit from '../circuits/target/circuits.json';
 import { UltraHonkBackend } from '@aztec/bb.js';
 import { Noir } from '@noir-lang/noir_js';
-import { extractCoordinates, extractRSFromSignature, addressToArray, padArray } from '../zksafe/zksafe';
+import { extractCoordinates, extractRSFromSignature, addressToArray, padArray, prove, proveTransactionSignatures } from '../zksafe/zksafe';
 
 const DEFAULT_TRANSACTION = {
     to: zeroAddress,
@@ -193,49 +193,8 @@ describe("ZkSafeModule", function () {
         const sig1 = await signTransactionFromUser(accounts[0], safe, transaction);
         const sig2 = await signTransactionFromUser(accounts[1], safe, transaction);
         const sig3 = await signTransactionFromUser(accounts[2], safe, transaction);
-        const signatures = [sig2, sig3]; // sig1 is not included, threshold of 2 should be enough.
-
-        const nil_pubkey = {
-            x: Array.from(toBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")),
-            y: Array.from(toBytes("0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
-        };
-        // Our Nil signature is a signature with r and s set to
-        const nil_signature = Array.from(
-            toBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"));
-        const zero_address = new Array(20).fill(0);
-
-
-        // Sort signatures by address - this is how the Safe contract does it.
-        const sortedSignatures = await Promise.all(signatures.map(async (sig) => {
-            const addr = await recoverAddress({hash: txHash as Hex, signature: sig.data as Hex});
-            return { sig, addr };
-        }));
-        sortedSignatures.sort((a, b) => a.addr.localeCompare(b.addr));
-        const sortedSigs = sortedSignatures.map(s => s.sig);
-
-        const input = {
-            threshold: await safe.getThreshold(),
-            signers: padArray(await Promise.all(sortedSigs.map(async (sig) => {
-                const pubKey = await recoverPublicKey({
-                    hash: txHash as `0x${string}`,
-                    signature: sig.data as `0x${string}`
-                });
-                return extractCoordinates(pubKey);
-            })), 10, nil_pubkey),
-            signatures: padArray(sortedSigs.map(sig => extractRSFromSignature(sig.data as `0x${string}`)), 10, nil_signature),
-            txn_hash: Array.from(toBytes(txHash as `0x${string}`)),
-            owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
-        };
-        // Generate witness first
-        const { witness } = await noir.execute(input);
-
-        // Use backend to generate proof from witness
-        const proof = await backend.generateProof(witness, { keccak: true });
-
-        // Verify proof
-        const verification = await backend.verifyProof(proof, { keccak: true });
-        expect(verification).to.be.true;
-        console.log("verification in JS succeeded");
+        const signatures = [sig2.data as Hex, sig3.data as Hex]; // sig1 is not included, threshold of 2 should be enough.
+        const proof = await proveTransactionSignatures(safe, signatures, txHash as Hex);
 
         // Convert Uint8Array proof to hex string for contract call
         const proofHex = `0x${Buffer.from(proof.proof).toString('hex')}`;

@@ -113,7 +113,7 @@ export async function zksend(hre: any, safeAddr: string, to: string, value: stri
     console.log("Transaction result: ", receipt);
 }
 
-async function proveTransactionSignatures(safe: Safe, signatures: Hex[], txHash: Hex) {
+export async function proveTransactionSignatures(safe: Safe, signatures: Hex[], txHash: Hex) {
         const backend = new UltraHonkBackend(circuit.bytecode);
         const noir = new Noir(circuit, backend);
         await noir.init();
