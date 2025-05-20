@@ -14,43 +14,7 @@ import ZkSafeModule from "../ignition/modules/zkSafe";
 import circuit from '../circuits/target/circuits.json';
 import { UltraHonkBackend } from '@aztec/bb.js';
 import { Noir } from '@noir-lang/noir_js';
-
-/// Extract x and y coordinates from a serialized ECDSA public key.
-function extractCoordinates(serializedPubKey: string): { x: number[], y: number[] } {
-    // Ensure the key starts with '0x04' which is typical for an uncompressed key.
-    if (!serializedPubKey.startsWith('0x04')) {
-        throw new Error('The public key does not appear to be in uncompressed format.');
-    }
-
-    // The next 64 characters after the '0x04' are the x-coordinate.
-    let xHex = serializedPubKey.slice(4, 68);
-
-    // The following 64 characters are the y-coordinate.
-    let yHex = serializedPubKey.slice(68, 132);
-
-    // Convert the hex string to a byte array.
-    let xBytes = Array.from(Buffer.from(xHex, 'hex'));
-    let yBytes = Array.from(Buffer.from(yHex, 'hex'));
-    return { x: xBytes, y: yBytes };
-}
-
-function extractRSFromSignature(signatureHex: string): number[] {
-    if (signatureHex.length !== 132 || !signatureHex.startsWith('0x')) {
-        throw new Error('Signature should be a 130-character hex string starting with 0x.');
-    }
-    return Array.from(Buffer.from(signatureHex.slice(2, 130), 'hex'));
-}
-
-function addressToArray(address: string): number[] {
-    if (address.length !== 42 || !address.startsWith('0x')) {
-        throw new Error('Address should be a 40-character hex string starting with 0x.');
-    }
-    return Array.from(toBytes(address));
-}
-
-function padArray(arr: any[], length: number, fill: any = 0) {
-    return arr.concat(Array(length - arr.length).fill(fill));
-}
+import { extractCoordinates, extractRSFromSignature, addressToArray, padArray } from '../zksafe/zksafe';
 
 const DEFAULT_TRANSACTION = {
     to: zeroAddress,
@@ -229,6 +193,7 @@ describe("ZkSafeModule", function () {
         const sig1 = await signTransactionFromUser(accounts[0], safe, transaction);
         const sig2 = await signTransactionFromUser(accounts[1], safe, transaction);
         const sig3 = await signTransactionFromUser(accounts[2], safe, transaction);
+        const signatures = [sig2, sig3]; // sig1 is not included, threshold of 2 should be enough.
 
         const nil_pubkey = {
             x: Array.from(toBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")),
@@ -239,7 +204,6 @@ describe("ZkSafeModule", function () {
             toBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"));
         const zero_address = new Array(20).fill(0);
 
-        const signatures = [sig2, sig3]; // sig1 is not included, threshold of 2 should be enough.
 
         // Sort signatures by address - this is how the Safe contract does it.
         const sortedSignatures = await Promise.all(signatures.map(async (sig) => {
