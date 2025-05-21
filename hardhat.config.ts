@@ -96,7 +96,7 @@ const config: HardhatUserConfig = {
             accounts: getAccounts(),
         },
         sepolia: {
-            url: "https://eth-sepolia.g.alchemy.com/v2/sbYzhasn-3AmNbMZXhwvwuI0Pxhj0sbw",
+            url: "https://ethereum-sepolia-rpc.publicnode.com",
             accounts: getAccounts(),
         },
         telos: {
