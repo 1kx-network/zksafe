@@ -1,18 +1,21 @@
+import { zeroAddress, parseEther, encodeFunctionData, toHex, Account, toBytes, recoverAddress, recoverPublicKey, Hex, createWalletClient, http, WalletClient } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { formatEther } from 'viem';
 import Safe from '@safe-global/protocol-kit';
-import { EthersAdapter, SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit';
-import { SafeTransactionData } from '@safe-global/safe-core-sdk-types';
-
-
-import circuit from '../circuits/target/circuits.json';
-import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
-import { Noir } from '@noir-lang/noir_js';
-import { ethers } from "ethers";
+import { SafeAccountConfig } from '@safe-global/protocol-kit';
+import { SafeTransactionData, SafeSignature } from '@safe-global/types-kit';
+import assert from 'assert';
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { vars } from "hardhat/config";
+
+import circuit from '../noir/circuits/target/circuits.json';
+import { Noir } from '@noir-lang/noir_js';
+import { UltraHonkBackend } from '@aztec/bb.js';
 
 import ZkSafeModule from "../ignition/modules/zkSafe";
 
 /// Extract x and y coordinates from a serialized ECDSA public key.
-function extractCoordinates(serializedPubKey: string): { x: number[], y: number[] } {
+export function extractCoordinates(serializedPubKey: string): { x: number[], y: number[] } {
     // Ensure the key starts with '0x04' which is typical for an uncompressed key.
     if (!serializedPubKey.startsWith('0x04')) {
         throw new Error('The public key does not appear to be in uncompressed format.');
@@ -30,34 +33,43 @@ function extractCoordinates(serializedPubKey: string): { x: number[], y: number[
     return { x: xBytes, y: yBytes };
 }
 
-function extractRSFromSignature(signatureHex: string): number[] {
+export function extractRSFromSignature(signatureHex: string): number[] {
     if (signatureHex.length !== 132 || !signatureHex.startsWith('0x')) {
         throw new Error('Signature should be a 132-character hex string starting with 0x.');
     }
     return Array.from(Buffer.from(signatureHex.slice(2, 130), 'hex'));
 }
 
-function addressToArray(address: string): number[] {
+export function addressToArray(address: string): number[] {
     if (address.length !== 42 || !address.startsWith('0x')) {
         throw new Error('Address should be a 40-character hex string starting with 0x.');
     }
-    return Array.from(ethers.getBytes(address));
+    return Array.from(toBytes(address));
 }
 
-function padArray(arr: any[], length: number, fill: any = 0) {
+export function padArray(arr: any[], length: number, fill: any = 0) {
     return arr.concat(Array(length - arr.length).fill(fill));
 }
 
-export async function zksend(hre, safeAddr: string, to: string, value: string, data: string, proof: string) {
-    // Sign transaction using safe-core-sdk.
-    const mywallet = new hre.ethers.Wallet(vars.get("SAFE_OWNER_PRIVATE_KEY"), hre.ethers.provider);
-    const mywalletAddress = mywallet.address;
-    console.log("My wallet address: ", mywalletAddress);
+function ensureHexPrefix(value: string): `0x${string}` {
+    return value.startsWith("0x") ? value as `0x${string}` : `0x${value}`;
+}
 
-    // Sign transaction using safe-core-sdk.
-    const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: mywallet });
-    console.log("connecting to safe");
-    const safe = await Safe.create({ ethAdapter, safeAddress: safeAddr });
+export async function zksend(hre: any, safeAddr: string, to: string, value: string, data: string, proof: string) {
+    // Get wallet client
+    const pk = ensureHexPrefix(vars.get("DEPLOYER_PRIVATE_KEY") as string);
+    const account = privateKeyToAccount(pk);
+    const mywalletAddress = account.address;
+    console.log("My wallet address: ", mywalletAddress);
+    const publicClient = await hre.viem.getPublicClient();
+
+    // Initialize Safe
+    const safe = await Safe.init({
+        provider: hre.network.config.url,
+        signer: pk,
+        safeAddress: safeAddr
+    });
+
     const version = await safe.getContractVersion();
     const threshold = await safe.getThreshold();
     const owners = await safe.getOwners();
@@ -68,17 +80,16 @@ export async function zksend(hre, safeAddr: string, to: string, value: string, d
     console.log("  threshold: ", threshold);
     console.log("  nonce: ", await safe.getNonce());
     console.log("  chainId: ", await safe.getChainId());
-    console.log("  balance: ", ethers.formatEther(await safe.getBalance()));
+    console.log("  balance: ", formatEther(await safe.getBalance()));
 
+    // Find ZkSafeModule
     const modules = await safe.getModules();
     let zkSafeModule = null;
-    for (let i = 0; i < modules.length; i++) {
-        const address = ethers.getAddress(modules[i]);
-        console.log("Checking module: ", address);
-        const ZkSafeModule = await hre.ethers.getContractFactory("ZkSafeModule");
-        const module = await ZkSafeModule.attach(address);
+    for (const moduleAddress of modules) {
+        console.log("Checking module: ", moduleAddress);
         try {
-            const version = await module.zkSafeModuleVersion();
+            const module = await hre.viem.getContractAt("ZkSafeModule", moduleAddress);
+            const version = await module.read.zkSafeModuleVersion();
             console.log("ZkSafe version: ", version);
             zkSafeModule = module;
             break;
@@ -87,10 +98,11 @@ export async function zksend(hre, safeAddr: string, to: string, value: string, d
         }
     }
     if (!zkSafeModule) {
-        throw new Error("ZkSafeModule not found on Safe `${safeAddress}`");
+        throw new Error(`ZkSafeModule not found on Safe ${safeAddress}`);
     }
 
-    const txn = await zkSafeModule.sendZkSafeTransaction(
+    // Send transaction
+    const txn = await zkSafeModule.write.sendZkSafeTransaction([
         safeAddress,
         {
             to,
@@ -98,19 +110,69 @@ export async function zksend(hre, safeAddr: string, to: string, value: string, d
             data,
             operation: 0
         },
-        proof,
-        { gasLimit: 2000000 }
-    );
-    console.log("Transaction hash: ", txn.hash);
-    const result = txn.wait();
-    console.log("Transaction result: ", await result);
+        proof
+    ]);
+
+    console.log("Transaction hash: ", txn);
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: txn });
+    console.log("Transaction result: ", receipt);
 }
 
-export async function prove(hre, safeAddr: string, txHash: string, signatures_: string) {
-    const mywallet = new hre.ethers.Wallet(vars.get("SAFE_OWNER_PRIVATE_KEY"), hre.ethers.provider);
-    const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: mywallet });
-    console.log("connecting to safe");
-    const safe = await Safe.create({ ethAdapter, safeAddress: safeAddr });
+export async function proveTransactionSignatures(hre: HardhatRuntimeEnvironment, safe: Safe, signatures: Hex[], txHash: Hex) {
+        const { noir, backend } = await hre.noir.getCircuit("circuits");
+        console.log("noir backend initialized");
+
+        const nil_pubkey = {
+            x: Array.from(toBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")),
+            y: Array.from(toBytes("0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
+        };
+        // Our Nil signature is a signature with r and s set to the generator point.
+        const nil_signature = Array.from(
+            toBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"));
+        const zero_address = new Array(20).fill(0);
+
+        // Sort signatures by address - this is how the Safe contract does it.
+        const sortedSignatures = await Promise.all(signatures.map(async (sig) => {
+            const addr = await recoverAddress({hash: txHash, signature: sig});
+            return { sig, addr };
+        }));
+        sortedSignatures.sort((a, b) => a.addr.localeCompare(b.addr));
+        const sortedSigs = sortedSignatures.map(s => s.sig);
+
+        const input = {
+            threshold: await safe.getThreshold(),
+            signers: padArray(await Promise.all(sortedSigs.map(async (sig) => {
+                const pubKey = await recoverPublicKey({
+                    hash: txHash as `0x${string}`,
+                    signature: sig
+                });
+                return extractCoordinates(pubKey);
+            })), 10, nil_pubkey),
+            signatures: padArray(sortedSigs.map(sig => extractRSFromSignature(sig)), 10, nil_signature),
+            txn_hash: Array.from(toBytes(txHash as `0x${string}`)),
+            owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
+        };
+        // Generate witness first
+        const { witness } = await noir.execute(input);
+
+        // Use backend to generate proof from witness
+        const proof = await backend.generateProof(witness, { keccak: true });
+
+        // Verify proof
+        const verification = await backend.verifyProof(proof, { keccak: true });
+        assert(verification, "Verification failed");
+        console.log("verification in JS succeeded");
+        return proof;
+}
+
+
+export async function prove(hre: HardhatRuntimeEnvironment, safeAddr: string, txHash: string, signatures_: string) {
+    // Initialize Safe - we need it to prepare the witness (owners/threeshold) from onchain data.
+    const safe = await Safe.init({
+        provider: hre.network.config.url,
+        safeAddress: safeAddr
+    });
+
     const version = await safe.getContractVersion();
     const threshold = await safe.getThreshold();
     const owners = await safe.getOwners();
@@ -121,49 +183,33 @@ export async function prove(hre, safeAddr: string, txHash: string, signatures_: 
     console.log("  threshold: ", threshold);
     console.log("  nonce: ", await safe.getNonce());
     console.log("  chainId: ", await safe.getChainId());
-    console.log("  balance: ", ethers.formatEther(await safe.getBalance()));
+    console.log("  balance: ", formatEther(await safe.getBalance()));
 
-    const backend = new BarretenbergBackend(circuit);
-    const noir = new Noir(circuit, backend);
-    await noir.init();
-    console.log("noir backend initialzied");
-
-    console.log("proving ...");
-    const nil_pubkey = {
-        x: Array.from(ethers.getBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")),
-        y: Array.from(ethers.getBytes("0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
-    };
-    // Our Nil signature is a signature with r and s set to the G point
-    const nil_signature = Array.from(
-        ethers.getBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"));
-    const zero_address = new Array(20).fill(0);
-    const signatures = signatures_.split(",");
-
-    // Sort signatures by address - this is how the Safe contract does it.
-    signatures.sort((sig1, sig2) => ethers.recoverAddress(txHash, sig1).localeCompare(ethers.recoverAddress(txHash, sig2)));
-    const input = {
-        threshold: await safe.getThreshold(),
-        signers: padArray(signatures.map((sig) => extractCoordinates(ethers.SigningKey.recoverPublicKey(txHash, sig))), 10, nil_pubkey),
-        signatures: padArray(signatures.map(extractRSFromSignature), 10, nil_signature),
-        txn_hash: Array.from(ethers.getBytes(txHash)),
-        owners: padArray((await safe.getOwners()).map(addressToArray), 10, zero_address),
-    };
-    const correctProof = await noir.generateFinalProof(input);
-    console.log("Proof: ", ethers.hexlify(correctProof.proof));
+    const signatures = signatures_.split(",").map(sig => sig.trim()).filter(sig => {
+        if (!sig.startsWith("0x")) {
+            throw new Error("Invalid signature format (must start with 0x)");
+        }
+        return true;
+    });
+    const proof = await proveTransactionSignatures(hre, safe, signatures as Hex[], txHash as Hex);
+    console.log("Proof: ", toHex(proof.proof));
 }
 
-export async function sign(hre, safeAddr: string, to: string, value: string, data: string) {
-    // Sign transaction using safe-core-sdk.
-    const mywallet = new hre.ethers.Wallet(vars.get("SAFE_OWNER_PRIVATE_KEY"), hre.ethers.provider);
-    console.log("mywallet: ", mywallet);
-    console.log("initialized my wallet");
-    const mywalletAddress = mywallet.address;
+export async function sign(hre: HardhatRuntimeEnvironment, safeAddr: string, to: string, value: string, data: string) {
+    // Get wallet client
+    const pk = vars.get("SAFE_OWNER_PRIVATE_KEY") as string;
+    const publicClient = await hre.viem.getPublicClient();
+    const account = privateKeyToAccount(ensureHexPrefix(pk));
+    const mywalletAddress = account.address;
     console.log("My wallet address: ", mywalletAddress);
 
-    // Sign transaction using safe-core-sdk.
-    const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: mywallet });
-    console.log("connecting to safe");
-    const safe = await Safe.create({ ethAdapter, safeAddress: safeAddr });
+    // Initialize Safe
+    const safe = await Safe.init({
+        provider: hre.network.config.url,
+        signer: pk,
+        safeAddress: safeAddr
+    });
+
     const version = await safe.getContractVersion();
     const threshold = await safe.getThreshold();
     const owners = await safe.getOwners();
@@ -174,7 +220,7 @@ export async function sign(hre, safeAddr: string, to: string, value: string, dat
     console.log("  threshold: ", threshold);
     console.log("  nonce: ", await safe.getNonce());
     console.log("  chainId: ", await safe.getChainId());
-    console.log("  balance: ", ethers.formatEther(await safe.getBalance()));
+    console.log("  balance: ", formatEther(await safe.getBalance()));
 
     const safeTransactionData: SafeTransactionData = {
         to,
@@ -185,8 +231,8 @@ export async function sign(hre, safeAddr: string, to: string, value: string, dat
         safeTxGas: "0x0",
         baseGas: "0x0",
         gasPrice: "0x0",
-        gasToken: ethers.ZeroAddress,
-        refundReceiver: ethers.ZeroAddress,
+        gasToken: zeroAddress,
+        refundReceiver: zeroAddress,
         nonce: await safe.getNonce(),
     };
 
@@ -195,34 +241,72 @@ export async function sign(hre, safeAddr: string, to: string, value: string, dat
     const txHash = await safe.getTransactionHash(transaction);
     console.log("txHash", txHash);
 
-    const safeSig = await safe.signTypedData(transaction);
+    // Sign the transaction using the Safe instance
+    const signedTransaction = await safe.signTransaction(transaction);
+    const safeSig = signedTransaction.getSignature(mywalletAddress)!;
     console.log("Signature: ", safeSig.data);
 }
 
-export async function createZkSafe(hre, owners: string[], threshold: number) {
-    const mywallet = new hre.ethers.Wallet(vars.get("DEPLOYER_PRIVATE_KEY"), hre.ethers.provider);
-    console.log("initialized my wallet");
-    const mywalletAddress = mywallet.address;
+export async function createZkSafe(hre: HardhatRuntimeEnvironment, owners: string[], threshold: number) {
+    // Get wallet client
+    const pk = vars.get("DEPLOYER_PRIVATE_KEY") as string;
+    const account = privateKeyToAccount(ensureHexPrefix(pk));
+    const walletClient: WalletClient = createWalletClient({
+        account,
+        transport: http(hre.network.config.url)
+    });
+    const publicClient = await hre.viem.getPublicClient();
+    const mywalletAddress = walletClient.account!.address;
     console.log("My wallet address: ", mywalletAddress);
 
-    // Sign transaction using safe-core-sdk.
-    const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: mywallet });
+    const result = await hre.ignition.deploy(ZkSafeModule);
+    const zkSafeModule = result.zkSafeModule;
 
-    const safeFactory = await SafeFactory.create({ ethAdapter: ethAdapter });
-    const safeAccountConfig: SafeAccountConfig =  {
-        owners,
-        threshold,
-    };
+    console.log("zkSafeModule: ", zkSafeModule.address);
 
-    const { zkSafeModule } = await hre.ignition.deploy(ZkSafeModule);
-    const zkSafeModuleAddress = await zkSafeModule.getAddress();
-    console.log("zkSafeModule: ", zkSafeModuleAddress);
+    // Enable module
+    const calldata = encodeFunctionData({
+        abi: [{
+            name: 'enableModule',
+            type: 'function',
+            stateMutability: 'nonpayable',
+            inputs: [{ name: 'module', type: 'address' }],
+            outputs: []
+        }],
+        functionName: 'enableModule',
+        args: [zkSafeModule.address]
+    });
 
-    safeAccountConfig.to = zkSafeModuleAddress;
-    const iface = new ethers.Interface(["function enableModule(address module)"]);
-    safeAccountConfig.data = iface.encodeFunctionData("enableModule", [zkSafeModuleAddress]);
+    const safe = await Safe.init({
+        provider: walletClient.transport,
+        predictedSafe: {
+            safeAccountConfig: {
+                owners,
+                threshold: 1,
+                to: zkSafeModule.address,
+                data: calldata,
+            }
+        },
+    });
 
-    const safe = await safeFactory.deploySafe({ safeAccountConfig });
-    const safeAddress = await safe.getAddress();
+    const safeAddress = await safe.getAddress() as `0x${string}`;
+    const deploymentTransaction = await safe.createSafeDeploymentTransaction();
+
+    const transactionHash = await walletClient.sendTransaction({
+        account: walletClient.account as Account,
+        chain: walletClient.chain,
+        to: deploymentTransaction.to,
+        value: parseEther(deploymentTransaction.value),
+        data: deploymentTransaction.data as `0x${string}`,
+    });
+
+    const transactionReceipt = await publicClient.waitForTransactionReceipt({
+        hash: transactionHash
+    });
+
+    if (transactionReceipt.status != "success") {
+        throw new Error("Safe failed to deploy.")
+    }
+
     console.log("Created zkSafe at address: ", safeAddress);
 }

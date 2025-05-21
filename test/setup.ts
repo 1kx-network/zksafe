@@ -121,11 +121,6 @@ export const migrationContractFrom130To141 = async () => {
     return await hre.ethers.getContractFactory("Safe130To141Migration");
 };
 
-export const getMock = async () => {
-    const Mock = await hre.ethers.getContractFactory("MockContract");
-    return await Mock.deploy();
-};
-
 export const getSafeTemplate = async (saltNumber: string = getRandomIntAsString()) => {
     const singleton = await getSafeSingleton();
     const singletonAddress = await singleton.address;

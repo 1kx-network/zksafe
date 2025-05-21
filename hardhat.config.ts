@@ -1,12 +1,13 @@
 import { HardhatUserConfig } from "hardhat/types";
+import "hardhat-noir";
 import "hardhat-deploy";
-import "@nomicfoundation/hardhat-ethers";
+import "@nomicfoundation/hardhat-toolbox-viem";
 import "@nomicfoundation/hardhat-ignition";
-import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomicfoundation/hardhat-ignition-viem";
+// import "@nomicfoundation/hardhat-chai-matchers";
 
-import { BigNumber } from "@ethersproject/bignumber";
 import { DeterministicDeploymentInfo } from "hardhat-deploy/dist/types";
-import { getSingletonFactoryInfo } from "@gnosis.pm/safe-singleton-factory";
+import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
 
 import { zksend, sign, prove, createZkSafe } from "./zksafe/zksafe";
 
@@ -22,7 +23,7 @@ const deterministicDeployment = (network: string): DeterministicDeploymentInfo =
     return {
         factory: info.address,
         deployer: info.signerAddress,
-        funding: BigNumber.from(info.gasLimit).mul(BigNumber.from(info.gasPrice)).toString(),
+        funding: (BigInt(info.gasLimit) * BigInt(info.gasPrice)).toString(),
         signedTx: info.transaction,
     };
 };
@@ -62,10 +63,13 @@ const getAccounts = function(): string[] {
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: "0.8.12",
+        version: "0.8.29",
         settings: {
-            optimizer: {  enabled: true, runs: 200 }
+            optimizer: {  enabled: true, runs: 100000000 }
         }
+    },
+    noir: {
+        version: "1.0.0-beta.3",
     },
     namedAccounts: {
         deployer: {
@@ -96,7 +100,7 @@ const config: HardhatUserConfig = {
             accounts: getAccounts(),
         },
         sepolia: {
-            url: "https://rpc.sepolia.org/",
+            url: "https://ethereum-sepolia-rpc.publicnode.com",
             accounts: getAccounts(),
         },
         telos: {

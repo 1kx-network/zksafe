@@ -1,0 +1,8 @@
+[package]
+name = "circuits"
+type = "bin"
+authors = ["Valeriy Zamaraiev"]
+compiler_version = ">=1.0.0"
+
+[dependencies]
+keccak256 = { tag = "v0.1.0", git = "https://github.com/noir-lang/keccak256" }
