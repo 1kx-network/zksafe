@@ -169,16 +169,9 @@ export async function proveTransactionSignatures(safe: Safe, signatures: Hex[], 
 
 
 export async function prove(hre: HardhatRuntimeEnvironment, safeAddr: string, txHash: string, signatures_: string) {
-    // Get wallet client
-    const pk = vars.get("DEPLOYER_PRIVATE_KEY") as string;
-    const account = privateKeyToAccount(ensureHexPrefix(pk));
-    const mywalletAddress = account.address;
-    console.log("My wallet address: ", mywalletAddress);
-
-    // Initialize Safe
+    // Initialize Safe - we need it to prepare the witness (owners/threeshold) from onchain data.
     const safe = await Safe.init({
         provider: hre.network.config.url,
-        signer: pk,
         safeAddress: safeAddr
     });
 
@@ -206,7 +199,7 @@ export async function prove(hre: HardhatRuntimeEnvironment, safeAddr: string, tx
 
 export async function sign(hre: HardhatRuntimeEnvironment, safeAddr: string, to: string, value: string, data: string) {
     // Get wallet client
-    const pk = vars.get("DEPLOYER_PRIVATE_KEY") as string;
+    const pk = vars.get("SAFE_OWNER_PRIVATE_KEY") as string;
     const publicClient = await hre.viem.getPublicClient();
     const account = privateKeyToAccount(ensureHexPrefix(pk));
     const mywalletAddress = account.address;
