@@ -18,7 +18,7 @@ contract ZkSafeModule {
     }
 
     function zkSafeModuleVersion() public pure returns (string memory) {
-        return "ZkSafeModule/v0.0.1";
+        return "ZkSafeModule/v1.0.1";
     }
 
     // Basic representation of a Safe{Wallet} transaction supported by zkSafe.
