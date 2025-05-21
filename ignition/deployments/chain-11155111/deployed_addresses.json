@@ -1,4 +1,6 @@
 {
   "zkSafe#UltraVerifier": "0x12F772a83226B1eeaDBddB41e121fc9be4BDB5C4",
-  "zkSafe#ZkSafeModule": "0xed1Ae0946bfB84253561fB1a05fEeD120A8cD2Eb"
+  "zkSafe#ZkSafeModule": "0xed1Ae0946bfB84253561fB1a05fEeD120A8cD2Eb",
+  "zkSafe_v2#HonkVerifier": "0x967bEb96e85F5D1E89B2a5F59567fe2005b0e446",
+  "zkSafe_v2#ZkSafeModule": "0x2C9D187FCd22978268C4fee46f1FF6B42E55541a"
 }

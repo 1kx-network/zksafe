@@ -1,16 +1,16 @@
-import { zeroAddress, parseEther, encodeFunctionData, toHex, Account, toBytes, recoverAddress, recoverPublicKey, Hex } from "viem";
+import { zeroAddress, parseEther, encodeFunctionData, toHex, Account, toBytes, recoverAddress, recoverPublicKey, Hex, createWalletClient, http, WalletClient } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { formatEther } from 'viem';
 import Safe from '@safe-global/protocol-kit';
 import { SafeAccountConfig } from '@safe-global/protocol-kit';
 import { SafeTransactionData, SafeSignature } from '@safe-global/types-kit';
-import { ethers } from 'ethers';
 import assert from 'assert';
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { vars } from "hardhat/config";
 
 import circuit from '../circuits/target/circuits.json';
 import { Noir } from '@noir-lang/noir_js';
 import { UltraHonkBackend } from '@aztec/bb.js';
-import { vars } from "hardhat/config";
 
 import ZkSafeModule from "../ignition/modules/zkSafe";
 
@@ -51,17 +51,22 @@ export function padArray(arr: any[], length: number, fill: any = 0) {
     return arr.concat(Array(length - arr.length).fill(fill));
 }
 
+function ensureHexPrefix(value: string): `0x${string}` {
+    return value.startsWith("0x") ? value as `0x${string}` : `0x${value}`;
+}
+
 export async function zksend(hre: any, safeAddr: string, to: string, value: string, data: string, proof: string) {
     // Get wallet client
-    const [walletClient] = await hre.viem.getWalletClients();
-    const publicClient = await hre.viem.getPublicClient();
-    const mywalletAddress = walletClient.account.address;
+    const pk = ensureHexPrefix(vars.get("DEPLOYER_PRIVATE_KEY") as string);
+    const account = privateKeyToAccount(pk);
+    const mywalletAddress = account.address;
     console.log("My wallet address: ", mywalletAddress);
+    const publicClient = await hre.viem.getPublicClient();
 
     // Initialize Safe
     const safe = await Safe.init({
-        provider: walletClient.transport,
-        signer: walletClient.account.address,
+        provider: hre.network.config.url,
+        signer: pk,
         safeAddress: safeAddr
     });
 
@@ -123,7 +128,7 @@ export async function proveTransactionSignatures(safe: Safe, signatures: Hex[], 
             x: Array.from(toBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")),
             y: Array.from(toBytes("0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
         };
-        // Our Nil signature is a signature with r and s set to
+        // Our Nil signature is a signature with r and s set to the generator point.
         const nil_signature = Array.from(
             toBytes("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"));
         const zero_address = new Array(20).fill(0);
@@ -165,15 +170,15 @@ export async function proveTransactionSignatures(safe: Safe, signatures: Hex[], 
 
 export async function prove(hre: HardhatRuntimeEnvironment, safeAddr: string, txHash: string, signatures_: string) {
     // Get wallet client
-    const [walletClient] = await hre.viem.getWalletClients();
-    const publicClient = await hre.viem.getPublicClient();
-    const mywalletAddress = walletClient.account.address;
+    const pk = vars.get("DEPLOYER_PRIVATE_KEY") as string;
+    const account = privateKeyToAccount(ensureHexPrefix(pk));
+    const mywalletAddress = account.address;
     console.log("My wallet address: ", mywalletAddress);
 
     // Initialize Safe
     const safe = await Safe.init({
-        provider: walletClient.transport,
-        signer: walletClient.account.address,
+        provider: hre.network.config.url,
+        signer: pk,
         safeAddress: safeAddr
     });
 
@@ -201,15 +206,16 @@ export async function prove(hre: HardhatRuntimeEnvironment, safeAddr: string, tx
 
 export async function sign(hre: HardhatRuntimeEnvironment, safeAddr: string, to: string, value: string, data: string) {
     // Get wallet client
-    const [walletClient] = await hre.viem.getWalletClients();
+    const pk = vars.get("DEPLOYER_PRIVATE_KEY") as string;
     const publicClient = await hre.viem.getPublicClient();
-    const mywalletAddress = walletClient.account.address;
+    const account = privateKeyToAccount(ensureHexPrefix(pk));
+    const mywalletAddress = account.address;
     console.log("My wallet address: ", mywalletAddress);
 
     // Initialize Safe
     const safe = await Safe.init({
-        provider: walletClient.transport,
-        signer: walletClient.account.address,
+        provider: hre.network.config.url,
+        signer: pk,
         safeAddress: safeAddr
     });
 
@@ -244,15 +250,22 @@ export async function sign(hre: HardhatRuntimeEnvironment, safeAddr: string, to:
     const txHash = await safe.getTransactionHash(transaction);
     console.log("txHash", txHash);
 
-    const safeSig = await safe.signTypedData(transaction);
+    // Sign the transaction using the Safe instance
+    const signedTransaction = await safe.signTransaction(transaction);
+    const safeSig = signedTransaction.getSignature(mywalletAddress)!;
     console.log("Signature: ", safeSig.data);
 }
 
 export async function createZkSafe(hre: HardhatRuntimeEnvironment, owners: string[], threshold: number) {
     // Get wallet client
-    const [walletClient] = await hre.viem.getWalletClients();
+    const pk = vars.get("DEPLOYER_PRIVATE_KEY") as string;
+    const account = privateKeyToAccount(ensureHexPrefix(pk));
+    const walletClient: WalletClient = createWalletClient({
+        account,
+        transport: http(hre.network.config.url)
+    });
     const publicClient = await hre.viem.getPublicClient();
-    const mywalletAddress = walletClient.account.address;
+    const mywalletAddress = walletClient.account!.address;
     console.log("My wallet address: ", mywalletAddress);
 
     const result = await hre.ignition.deploy(ZkSafeModule);
