@@ -169,9 +169,10 @@ describe("ZkSafeModule", function () {
         };
 
         // New Noir Way
-        backend = new UltraHonkBackend(circuit.bytecode);
-        noir = new Noir(circuit, backend);
-        await noir.init();
+        const circuits =  await hre.noir.getCircuit("circuits");
+        noir = circuits.noir;
+        backend = circuits.backend;
+//        await noir.init();
     });
 
     function readjustSigFromEthSign(signature: SafeSignature): Hex {
@@ -194,7 +195,7 @@ describe("ZkSafeModule", function () {
         const sig2 = await signTransactionFromUser(accounts[1], safe, transaction);
         const sig3 = await signTransactionFromUser(accounts[2], safe, transaction);
         const signatures = [sig2.data as Hex, sig3.data as Hex]; // sig1 is not included, threshold of 2 should be enough.
-        const proof = await proveTransactionSignatures(safe, signatures, txHash as Hex);
+        const proof = await proveTransactionSignatures(hre, safe, signatures, txHash as Hex);
 
         // Convert Uint8Array proof to hex string for contract call
         const proofHex = `0x${Buffer.from(proof.proof).toString('hex')}`;

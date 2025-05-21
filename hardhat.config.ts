@@ -1,4 +1,5 @@
 import { HardhatUserConfig } from "hardhat/types";
+import "hardhat-noir";
 import "hardhat-deploy";
 import "@nomicfoundation/hardhat-toolbox-viem";
 import "@nomicfoundation/hardhat-ignition";
@@ -62,10 +63,13 @@ const getAccounts = function(): string[] {
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: "0.8.27",
+        version: "0.8.29",
         settings: {
-            optimizer: {  enabled: true, runs: 200 }
+            optimizer: {  enabled: true, runs: 100000000 }
         }
+    },
+    noir: {
+        version: "1.0.0-beta.3",
     },
     namedAccounts: {
         deployer: {

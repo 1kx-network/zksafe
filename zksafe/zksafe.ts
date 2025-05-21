@@ -8,7 +8,7 @@ import assert from 'assert';
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { vars } from "hardhat/config";
 
-import circuit from '../circuits/target/circuits.json';
+import circuit from '../noir/circuits/target/circuits.json';
 import { Noir } from '@noir-lang/noir_js';
 import { UltraHonkBackend } from '@aztec/bb.js';
 
@@ -118,10 +118,8 @@ export async function zksend(hre: any, safeAddr: string, to: string, value: stri
     console.log("Transaction result: ", receipt);
 }
 
-export async function proveTransactionSignatures(safe: Safe, signatures: Hex[], txHash: Hex) {
-        const backend = new UltraHonkBackend(circuit.bytecode);
-        const noir = new Noir(circuit, backend);
-        await noir.init();
+export async function proveTransactionSignatures(hre: HardhatRuntimeEnvironment, safe: Safe, signatures: Hex[], txHash: Hex) {
+        const { noir, backend } = await hre.noir.getCircuit("circuits");
         console.log("noir backend initialized");
 
         const nil_pubkey = {
@@ -193,7 +191,7 @@ export async function prove(hre: HardhatRuntimeEnvironment, safeAddr: string, tx
         }
         return true;
     });
-    const proof = await proveTransactionSignatures(safe, signatures as Hex[], txHash as Hex);
+    const proof = await proveTransactionSignatures(hre, safe, signatures as Hex[], txHash as Hex);
     console.log("Proof: ", toHex(proof.proof));
 }
 

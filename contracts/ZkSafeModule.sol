@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.12;
 
-import {HonkVerifier} from "../circuits/target/Verifier.sol";
+import {HonkVerifier} from "../noir/target/circuits.sol";
 import "@safe-global/safe-contracts/contracts/common/Enum.sol";
 import "@safe-global/safe-contracts/contracts/Safe.sol";
 import "hardhat/console.sol";
