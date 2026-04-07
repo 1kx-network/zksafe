@@ -53,12 +53,7 @@ contract ZkSafePrivateOwnersModule {
      * @param threshold Number of required confirmations for a zkSafe transaction.
     */
     function enableModule(bytes32 ownersRoot, uint256 threshold) external {
-        address payable thisAddr = payable(address(this));
-        Safe(thisAddr).enableModule(zkSafeModuleAddress);
-
-        // Initialize zkMultisg config
-        ZkSafePrivateOwnersModule(zkSafeModuleAddress)
-            .updateZkMultisigConf(ownersRoot, threshold);
+        updateZkMultisigConf(ownersRoot, threshold);
     }
 
      /*
